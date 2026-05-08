@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -21,7 +22,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
         'role',
+        'is_admin',
+        'status',
+        'avatar_url',
     ];
 
     /**
@@ -44,6 +49,77 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function carts(): HasMany
+    {
+        return $this->hasMany(Cart::class);
+    }
+
+    public function tokens(): HasMany
+    {
+        return $this->hasMany(UserToken::class);
+    }
+
+    public function couponUsages(): HasMany
+    {
+        return $this->hasMany(CouponUsage::class);
+    }
+
+    public function adminLoginLogs(): HasMany
+    {
+        return $this->hasMany(AdminLoginLog::class);
+    }
+
+    public function userLoginLogs(): HasMany
+    {
+        return $this->hasMany(UserLoginLog::class);
+    }
+
+    public function searchHistories(): HasMany
+    {
+        return $this->hasMany(SearchHistory::class);
+    }
+
+    public function recentlyViewedProducts(): HasMany
+    {
+        return $this->hasMany(RecentlyViewedProduct::class);
+    }
+
+    public function orderReturns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class);
+    }
+
+    public function deliveryBoys(): HasMany
+    {
+        return $this->hasMany(DeliveryBoy::class);
+    }
+
+    public function statusHistoriesAuthored(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class, 'created_by');
+    }
+
+    public function cancellations(): HasMany
+    {
+        return $this->hasMany(Cancellation::class);
     }
 }
