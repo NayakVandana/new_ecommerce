@@ -6,6 +6,7 @@ import { PageProps as AppPageProps } from './';
 declare global {
     interface Window {
         axios: AxiosInstance;
+        __INITIAL_APPEARANCE__?: string | null;
     }
 
     /* eslint-disable no-var */

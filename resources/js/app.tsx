@@ -1,7 +1,16 @@
 import '../css/app.css';
 import './bootstrap';
 
+import {
+    applyAppearancePreference,
+    resolveInitialAppearance,
+    subscribeSystemThemeChange,
+} from '@/utils/appearance';
 import { createInertiaApp } from '@inertiajs/react';
+
+applyAppearancePreference(resolveInitialAppearance());
+subscribeSystemThemeChange();
+
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 

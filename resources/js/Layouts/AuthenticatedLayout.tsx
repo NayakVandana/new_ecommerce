@@ -1,3 +1,4 @@
+import AppearanceSync from '@/Components/AppearanceSync';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
@@ -14,8 +15,13 @@ export default function Authenticated({
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
 
+    if (!user) {
+        return null;
+    }
+
     return (
         <div className="min-h-screen bg-gray-100">
+            <AppearanceSync />
             <nav className="border-b border-gray-100 bg-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
