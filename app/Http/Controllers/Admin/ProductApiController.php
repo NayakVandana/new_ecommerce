@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -32,7 +33,16 @@ class ProductApiController extends Controller
             $currentPage = $request->input('current_page') ? (int) $request->input('current_page') : 1;
 
             $query = Product::query()
-                ->with(['brand', 'subcategory.category', 'variants'])
+                ->with([
+                    'brand',
+                    'subcategory.category',
+                    'variants',
+                    'images' => fn ($q) => $q
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order')
+                        ->orderBy('id')
+                        ->limit(1),
+                ])
                 ->orderBy('created_at', 'DESC');
 
             if ($request->filled('keyword')) {
@@ -53,6 +63,23 @@ class ProductApiController extends Controller
             }
 
             $products = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            $products->getCollection()->transform(function (Product $product) {
+                $img = $product->images->first();
+                $thumbUrl = null;
+                if ($img && $img->path) {
+                    try {
+                        $disk = $img->disk ?: config('filesystems.default');
+                        $thumbUrl = Storage::disk($disk)->url($img->path);
+                    } catch (\Throwable) {
+                        $thumbUrl = null;
+                    }
+                }
+                $product->setAttribute('thumb_url', $thumbUrl);
+                $product->unsetRelation('images');
+
+                return $product;
+            });
 
             return $this->sendJsonResponse(true, 'Products fetched successfully.', $products, 200);
         } catch (Exception $e) {

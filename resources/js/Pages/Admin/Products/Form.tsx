@@ -6,6 +6,7 @@ import {
     adminInput,
     adminLabel,
     adminPrimaryBtn,
+    adminStackPageWrap,
     adminWideFormCard,
 } from '@/admin/adminTheme';
 import {
@@ -195,7 +196,8 @@ export default function Form() {
         <>
             <Head title={existing ? 'Edit product' : 'New product'} />
             <AdminLayout heading={existing ? 'Edit product' : 'New product'}>
-                <div className="mb-6">
+                <div className={adminStackPageWrap}>
+                <div>
                     <Link
                         href={route('admin.products.index')}
                         className={adminBackLink}
@@ -506,7 +508,7 @@ export default function Form() {
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:flex-wrap">
                         <button
                             type="submit"
                             disabled={processing}
@@ -516,12 +518,13 @@ export default function Form() {
                         </button>
                         <Link
                             href={route('admin.products.index')}
-                            className={`inline-flex items-center ${adminCancelBtn}`}
+                            className={`inline-flex items-center justify-center ${adminCancelBtn}`}
                         >
                             Cancel
                         </Link>
                     </div>
                 </form>
+                </div>
             </AdminLayout>
         </>
     );

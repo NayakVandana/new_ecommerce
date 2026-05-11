@@ -1,4 +1,11 @@
 import {
+    adminErrorBanner,
+    adminInput,
+    adminLabel,
+    adminPageGradient,
+    adminPrimaryBtn,
+} from '@/admin/adminTheme';
+import {
     type AdminApiEnvelope,
     setAdminApiToken,
 } from '@/api/adminClient';
@@ -12,9 +19,6 @@ type LoginPayload = {
     token: string;
     token_type?: string;
 };
-
-const inputClass =
-    'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -62,75 +66,105 @@ export default function Login() {
         <>
             <Head title="Admin login" />
             <AppearanceSync />
-            <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-950">
-                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                    <h1 className="text-center text-2xl font-semibold text-slate-900 dark:text-white">
-                        Admin sign in
-                    </h1>
-                    <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-                        Seeded{' '}
-                        <span className="font-mono text-slate-700 dark:text-slate-300">
-                            admin@example.com
-                        </span>
-                    </p>
+            <div
+                className={`${adminPageGradient} flex min-h-screen flex-col lg:flex-row`}
+            >
+                <div className="relative hidden overflow-hidden lg:flex lg:w-[42%] xl:w-[45%]">
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-900" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(139,92,246,0.35),transparent_55%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(59,130,246,0.2),transparent_50%)]" />
+                    <div className="relative flex flex-col justify-between p-12 text-white xl:p-16">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-300/90">
+                                Console
+                            </p>
+                            <h2 className="mt-4 max-w-md text-4xl font-bold leading-tight tracking-tight xl:text-5xl">
+                                Run your store from one calm dashboard.
+                            </h2>
+                            <p className="mt-6 max-w-sm text-sm leading-relaxed text-slate-300">
+                                Secure access for staff. Catalog, orders, and customer data stay
+                                aligned with what shoppers see on the site.
+                            </p>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                            © {new Date().getFullYear()} Store OS
+                        </p>
+                    </div>
+                </div>
 
-                    <form className="mt-8 space-y-5" onSubmit={submit}>
-                        {error && (
-                            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200">
-                                {error}
+                <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-8">
+                    <div className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white/90 p-8 shadow-xl shadow-slate-300/30 ring-1 ring-slate-100 backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-black/40 dark:ring-white/5">
+                        <div className="text-center lg:text-left">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">
+                                Admin
+                            </p>
+                            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                Sign in
+                            </h1>
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                                Demo account{' '}
+                                <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                    admin@example.com
+                                </span>
+                            </p>
+                        </div>
+
+                        <form className="mt-8 space-y-5" onSubmit={submit}>
+                            {error && (
+                                <div className={adminErrorBanner}>{error}</div>
+                            )}
+                            <div>
+                                <label
+                                    htmlFor="email"
+                                    className={adminLabel}
+                                >
+                                    Email
+                                </label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    autoComplete="username"
+                                    className={adminInput}
+                                />
                             </div>
-                        )}
-                        <div>
-                            <label
-                                htmlFor="email"
-                                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                            <div>
+                                <label
+                                    htmlFor="password"
+                                    className={adminLabel}
+                                >
+                                    Password
+                                </label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    autoComplete="current-password"
+                                    className={adminInput}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className={`${adminPrimaryBtn} w-full`}
                             >
-                                Email
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                autoComplete="username"
-                                className={inputClass}
-                            />
-                        </div>
-                        <div>
-                            <label
-                                htmlFor="password"
-                                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-                            >
-                                Password
-                            </label>
-                            <input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                autoComplete="current-password"
-                                className={inputClass}
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-                        >
-                            Sign in
-                        </button>
-                    </form>
+                                {processing ? 'Signing in…' : 'Sign in'}
+                            </button>
+                        </form>
 
-                    <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-500">
-                        <Link
-                            href={route('home')}
-                            className="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
-                        >
-                            Back to storefront
-                        </Link>
-                    </p>
+                        <p className="mt-8 text-center text-xs text-slate-500 dark:text-slate-500">
+                            <Link
+                                href={route('home')}
+                                className="font-semibold text-violet-600 transition hover:text-violet-500 dark:text-violet-400 dark:hover:text-violet-300"
+                            >
+                                ← Back to storefront
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
         </>

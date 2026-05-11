@@ -4,6 +4,7 @@ import {
     adminCheckbox,
     adminErrorBanner,
     adminFormCard,
+    adminFormPageWrap,
     adminInput,
     adminLabel,
     adminPrimaryBtn,
@@ -98,7 +99,8 @@ export default function Form() {
         <>
             <Head title={existing ? 'Edit brand' : 'New brand'} />
             <AdminLayout heading={existing ? 'Edit brand' : 'New brand'}>
-                <div className="mb-6">
+                <div className={adminFormPageWrap}>
+                <div>
                     <Link href={route('admin.brands.index')} className={adminBackLink}>
                         ← Brands
                     </Link>
@@ -157,8 +159,8 @@ export default function Form() {
                             className={adminInput}
                         />
                     </div>
-                    <div className="flex gap-6">
-                        <div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
+                        <div className="min-w-0 shrink-0">
                             <label htmlFor="sort_order" className={adminLabel}>
                                 Sort order
                             </label>
@@ -170,10 +172,10 @@ export default function Form() {
                                 onChange={(e) =>
                                     setSortOrder(Number(e.target.value))
                                 }
-                                className={`${adminInput} max-w-[8rem]`}
+                                className={`${adminInput} max-w-full sm:max-w-[8rem]`}
                             />
                         </div>
-                        <label className="mt-7 flex items-center gap-2">
+                        <label className="flex items-center gap-2 pb-1 sm:pb-2">
                             <input
                                 type="checkbox"
                                 checked={isActive}
@@ -185,7 +187,7 @@ export default function Form() {
                             </span>
                         </label>
                     </div>
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:flex-wrap">
                         <button
                             type="submit"
                             disabled={processing}
@@ -195,12 +197,13 @@ export default function Form() {
                         </button>
                         <Link
                             href={route('admin.brands.index')}
-                            className={`inline-flex items-center ${adminCancelBtn}`}
+                            className={`inline-flex items-center justify-center ${adminCancelBtn}`}
                         >
                             Cancel
                         </Link>
                     </div>
                 </form>
+                </div>
             </AdminLayout>
         </>
     );
