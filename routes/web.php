@@ -83,6 +83,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
                     'brand',
                     'subcategory.category',
                     'variants' => fn ($q) => $q->orderByDesc('is_default')->orderBy('id'),
+                    'images' => fn ($q) => $q->orderBy('sort_order')->orderBy('id'),
+                    'videos' => fn ($q) => $q->orderBy('sort_order')->orderBy('id'),
                 ]),
                 'meta' => [
                     'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
