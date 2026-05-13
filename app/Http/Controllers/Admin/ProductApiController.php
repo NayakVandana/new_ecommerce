@@ -38,8 +38,17 @@ class ProductApiController extends Controller
                 ->with([
                     'brand',
                     'subcategory.category',
-                    'variants',
+                    'variants' => fn ($q) => $q
+                        ->orderByDesc('is_default')
+                        ->orderBy('id')
+                        ->with(['images' => fn ($iq) => $iq
+                            ->orderByDesc('is_primary')
+                            ->orderBy('sort_order')
+                            ->orderBy('id')
+                            ->limit(1),
+                        ]),
                     'images' => fn ($q) => $q
+                        ->whereNull('product_variant_id')
                         ->orderByDesc('is_primary')
                         ->orderBy('sort_order')
                         ->orderBy('id')
@@ -67,13 +76,17 @@ class ProductApiController extends Controller
             $products = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
             $products->getCollection()->transform(function (Product $product) {
-                $img = $product->images->first();
+                $defaultVariant = $product->variants->firstWhere('is_default', true)
+                    ?? $product->variants->first();
+                $img = $defaultVariant?->images->first()
+                    ?? $product->images->first();
                 $thumbUrl = null;
                 if ($img && $img->path) {
                     $thumbUrl = $this->resolveImagePublicUrl($img->path, $img->disk);
                 }
                 $product->setAttribute('thumb_url', $thumbUrl);
                 $product->unsetRelation('images');
+                $product->variants->each(fn ($v) => $v->unsetRelation('images'));
 
                 return $product;
             });
@@ -121,8 +134,20 @@ class ProductApiController extends Controller
                 $rules['variants.*.stock_quantity'] = ['nullable', 'integer', 'min:0'];
                 $rules['variants.*.size'] = ['nullable', 'string', 'max:50'];
                 $rules['variants.*.color'] = ['nullable', 'string', 'max:50'];
+                $rules['variants.*.color_hex'] = ['nullable', 'string', 'max:7', 'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'];
                 $rules['variants.*.barcode'] = ['nullable', 'string', 'max:255'];
                 $rules['variants.*.is_default'] = ['nullable', 'boolean'];
+                $rules['variants.*.images'] = ['nullable', 'array'];
+                $rules['variants.*.images.*.id'] = ['nullable', 'integer'];
+                $rules['variants.*.images.*.path'] = ['required', 'string', 'max:2048'];
+                $rules['variants.*.images.*.alt_text'] = ['nullable', 'string', 'max:255'];
+                $rules['variants.*.images.*.sort_order'] = ['nullable', 'integer', 'min:0', 'max:65535'];
+                $rules['variants.*.images.*.is_primary'] = ['nullable', 'boolean'];
+                $rules['variants.*.videos'] = ['nullable', 'array'];
+                $rules['variants.*.videos.*.id'] = ['nullable', 'integer'];
+                $rules['variants.*.videos.*.url'] = ['required', 'string', 'max:2048'];
+                $rules['variants.*.videos.*.provider'] = ['nullable', 'string', 'max:32'];
+                $rules['variants.*.videos.*.sort_order'] = ['nullable', 'integer', 'min:0', 'max:65535'];
             } else {
                 $rules['variant_sku'] = ['required', 'string', 'max:255', 'unique:product_variants,sku'];
                 $rules['variant_price'] = ['required', 'numeric', 'min:0'];
@@ -165,19 +190,52 @@ class ProductApiController extends Controller
                 ]);
 
                 if ($useVariantsArray) {
+                    $createdVariantModels = [];
                     foreach ($variantsInput as $row) {
-                        ProductVariant::query()->create([
+                        $createdVariantModels[] = ProductVariant::query()->create([
                             'product_id' => $product->id,
                             'sku' => $row['sku'],
                             'price' => $row['price'],
                             'stock_quantity' => $row['stock_quantity'] ?? 0,
                             'size' => $row['size'] ?? null,
-                            'color' => $row['color'] ?? null,
+                            'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
+                            'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
                             'barcode' => $row['barcode'] ?? null,
                             'is_default' => (bool) ($row['is_default'] ?? false),
                         ]);
                     }
                     $this->normalizeSingleDefaultVariant($product);
+                    foreach ($createdVariantModels as $i => $v) {
+                        $row = $variantsInput[$i];
+                        foreach ($row['images'] ?? [] as $j => $img) {
+                            $path = isset($img['path']) ? trim((string) $img['path']) : '';
+                            if ($path === '') {
+                                continue;
+                            }
+                            ProductImage::query()->create([
+                                'product_id' => $product->id,
+                                'product_variant_id' => $v->id,
+                                'path' => $path,
+                                'disk' => preg_match('#^https?://#i', $path) ? 'external' : ($img['disk'] ?? 'public'),
+                                'alt_text' => $img['alt_text'] ?? null,
+                                'sort_order' => (int) ($img['sort_order'] ?? $j),
+                                'is_primary' => (bool) ($img['is_primary'] ?? false),
+                            ]);
+                        }
+                        foreach ($row['videos'] ?? [] as $j => $vid) {
+                            $url = isset($vid['url']) ? trim((string) $vid['url']) : '';
+                            if ($url === '') {
+                                continue;
+                            }
+                            ProductVideo::query()->create([
+                                'product_id' => $product->id,
+                                'product_variant_id' => $v->id,
+                                'url' => $url,
+                                'provider' => $vid['provider'] ?? null,
+                                'sort_order' => (int) ($vid['sort_order'] ?? $j),
+                            ]);
+                        }
+                    }
                 } else {
                     ProductVariant::query()->create([
                         'product_id' => $product->id,
@@ -203,18 +261,19 @@ class ProductApiController extends Controller
                         'is_primary' => (bool) ($img['is_primary'] ?? false),
                     ]);
                 }
-                $this->normalizePrimaryImage($product);
+                $this->normalizePrimaryImagesForProduct($product);
 
-                foreach ($request->input('videos', []) as $vid) {
+                foreach ($request->input('videos', []) as $j => $vid) {
                     $url = isset($vid['url']) ? trim((string) $vid['url']) : '';
                     if ($url === '') {
                         continue;
                     }
                     ProductVideo::query()->create([
                         'product_id' => $product->id,
+                        'product_variant_id' => null,
                         'url' => $url,
                         'provider' => $vid['provider'] ?? null,
-                        'sort_order' => (int) ($vid['sort_order'] ?? 0),
+                        'sort_order' => (int) ($vid['sort_order'] ?? $j),
                     ]);
                 }
             });
@@ -222,9 +281,12 @@ class ProductApiController extends Controller
             return $this->sendJsonResponse(true, 'Product created.', $product->fresh([
                 'brand',
                 'subcategory.category',
-                'variants',
-                'images',
-                'videos',
+                'variants' => fn ($q) => $q->orderByDesc('is_default')->orderBy('id')->with([
+                    'images' => fn ($iq) => $iq->orderBy('sort_order')->orderBy('id'),
+                    'videos' => fn ($vq) => $vq->orderBy('sort_order')->orderBy('id'),
+                ]),
+                'images' => fn ($q) => $q->whereNull('product_variant_id')->orderBy('sort_order')->orderBy('id'),
+                'videos' => fn ($q) => $q->whereNull('product_variant_id')->orderBy('sort_order')->orderBy('id'),
             ]), 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -258,17 +320,20 @@ class ProductApiController extends Controller
                 'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
                 'variants.*.size' => ['nullable', 'string', 'max:50'],
                 'variants.*.color' => ['nullable', 'string', 'max:50'],
+                'variants.*.color_hex' => ['nullable', 'string', 'max:7', 'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'],
                 'variants.*.barcode' => ['nullable', 'string', 'max:255'],
                 'variants.*.is_default' => ['nullable', 'boolean'],
-                'new_images' => ['nullable', 'array'],
-                'new_images.*.path' => ['required', 'string', 'max:2048'],
-                'new_images.*.alt_text' => ['nullable', 'string', 'max:255'],
-                'new_images.*.sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
-                'new_images.*.is_primary' => ['nullable', 'boolean'],
-                'new_videos' => ['nullable', 'array'],
-                'new_videos.*.url' => ['required', 'string', 'max:2048'],
-                'new_videos.*.provider' => ['nullable', 'string', 'max:32'],
-                'new_videos.*.sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
+                'variants.*.images' => ['nullable', 'array'],
+                'variants.*.images.*.id' => ['nullable', 'integer'],
+                'variants.*.images.*.path' => ['required', 'string', 'max:2048'],
+                'variants.*.images.*.alt_text' => ['nullable', 'string', 'max:255'],
+                'variants.*.images.*.sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
+                'variants.*.images.*.is_primary' => ['nullable', 'boolean'],
+                'variants.*.videos' => ['nullable', 'array'],
+                'variants.*.videos.*.id' => ['nullable', 'integer'],
+                'variants.*.videos.*.url' => ['required', 'string', 'max:2048'],
+                'variants.*.videos.*.provider' => ['nullable', 'string', 'max:32'],
+                'variants.*.videos.*.sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
             ]);
 
             if ($validation->fails()) {
@@ -365,6 +430,7 @@ class ProductApiController extends Controller
                 }
 
                 if ($useVariantsArray) {
+                    $resolvedVariants = [];
                     foreach ($variantsPayload as $row) {
                         $vid = $row['id'] ?? null;
                         if ($vid) {
@@ -379,25 +445,51 @@ class ProductApiController extends Controller
                                     'price' => $row['price'],
                                     'stock_quantity' => $row['stock_quantity'] ?? 0,
                                     'size' => $row['size'] ?? null,
-                                    'color' => $row['color'] ?? null,
+                                    'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
+                                    'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
                                     'barcode' => $row['barcode'] ?? null,
                                     'is_default' => (bool) ($row['is_default'] ?? false),
                                 ]);
+                                $resolvedVariants[] = $v;
+                            } else {
+                                $resolvedVariants[] = null;
                             }
                         } else {
-                            ProductVariant::query()->create([
+                            $resolvedVariants[] = ProductVariant::query()->create([
                                 'product_id' => $product->id,
                                 'sku' => $row['sku'],
                                 'price' => $row['price'],
                                 'stock_quantity' => $row['stock_quantity'] ?? 0,
                                 'size' => $row['size'] ?? null,
-                                'color' => $row['color'] ?? null,
+                                'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
+                                'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
                                 'barcode' => $row['barcode'] ?? null,
                                 'is_default' => (bool) ($row['is_default'] ?? false),
                             ]);
                         }
                     }
                     $this->normalizeSingleDefaultVariant($product->fresh());
+
+                    foreach ($variantsPayload as $i => $row) {
+                        $v = $resolvedVariants[$i] ?? null;
+                        if (! $v) {
+                            continue;
+                        }
+                        if (array_key_exists('images', $row)) {
+                            $this->syncVariantImages(
+                                $product,
+                                $v,
+                                is_array($row['images']) ? $row['images'] : [],
+                            );
+                        }
+                        if (array_key_exists('videos', $row)) {
+                            $this->syncVariantVideos(
+                                $product,
+                                $v,
+                                is_array($row['videos']) ? $row['videos'] : [],
+                            );
+                        }
+                    }
                 } elseif ($variant && (
                     $request->filled('variant_sku')
                     || $request->filled('variant_price')
@@ -419,43 +511,18 @@ class ProductApiController extends Controller
                     }
                 }
 
-                foreach ($request->input('new_images', []) as $img) {
-                    $path = isset($img['path']) ? trim((string) $img['path']) : '';
-                    if ($path === '') {
-                        continue;
-                    }
-                    ProductImage::query()->create([
-                        'product_id' => $product->id,
-                        'product_variant_id' => null,
-                        'path' => $path,
-                        'disk' => preg_match('#^https?://#i', $path) ? 'external' : ($img['disk'] ?? 'public'),
-                        'alt_text' => $img['alt_text'] ?? null,
-                        'sort_order' => (int) ($img['sort_order'] ?? 0),
-                        'is_primary' => (bool) ($img['is_primary'] ?? false),
-                    ]);
-                }
-                $this->normalizePrimaryImage($product->fresh());
-
-                foreach ($request->input('new_videos', []) as $vid) {
-                    $url = isset($vid['url']) ? trim((string) $vid['url']) : '';
-                    if ($url === '') {
-                        continue;
-                    }
-                    ProductVideo::query()->create([
-                        'product_id' => $product->id,
-                        'url' => $url,
-                        'provider' => $vid['provider'] ?? null,
-                        'sort_order' => (int) ($vid['sort_order'] ?? 0),
-                    ]);
-                }
+                $this->normalizePrimaryImagesForProduct($product->fresh());
             });
 
             return $this->sendJsonResponse(true, 'Product updated.', $product->fresh([
                 'brand',
                 'subcategory.category',
-                'variants',
-                'images',
-                'videos',
+                'variants' => fn ($q) => $q->orderByDesc('is_default')->orderBy('id')->with([
+                    'images' => fn ($iq) => $iq->orderBy('sort_order')->orderBy('id'),
+                    'videos' => fn ($vq) => $vq->orderBy('sort_order')->orderBy('id'),
+                ]),
+                'images' => fn ($q) => $q->whereNull('product_variant_id')->orderBy('sort_order')->orderBy('id'),
+                'videos' => fn ($q) => $q->whereNull('product_variant_id')->orderBy('sort_order')->orderBy('id'),
             ]), 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -537,9 +604,23 @@ class ProductApiController extends Controller
         }
     }
 
-    private function normalizePrimaryImage(Product $product): void
+    private function normalizePrimaryImagesForProduct(Product $product): void
     {
-        $images = $product->images()->orderBy('sort_order')->orderBy('id')->get();
+        $this->normalizePrimaryImageScope($product->id, null);
+        foreach ($product->variants()->pluck('id') as $variantId) {
+            $this->normalizePrimaryImageScope($product->id, (int) $variantId);
+        }
+    }
+
+    private function normalizePrimaryImageScope(int $productId, ?int $variantId): void
+    {
+        $q = ProductImage::query()->where('product_id', $productId);
+        if ($variantId === null) {
+            $q->whereNull('product_variant_id');
+        } else {
+            $q->where('product_variant_id', $variantId);
+        }
+        $images = $q->orderBy('sort_order')->orderBy('id')->get();
         if ($images->isEmpty()) {
             return;
         }
@@ -549,5 +630,138 @@ class ProductApiController extends Controller
         foreach ($images as $img) {
             $img->update(['is_primary' => $img->id === $chosen->id]);
         }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $images
+     */
+    private function syncVariantImages(Product $product, ProductVariant $variant, array $images): void
+    {
+        $idsToKeep = [];
+
+        foreach ($images as $j => $img) {
+            $path = isset($img['path']) ? trim((string) $img['path']) : '';
+            if ($path === '') {
+                continue;
+            }
+
+            $disk = preg_match('#^https?://#i', $path) ? 'external' : ($img['disk'] ?? 'public');
+            $id = isset($img['id']) ? (int) $img['id'] : 0;
+
+            if ($id > 0) {
+                $model = ProductImage::query()
+                    ->where('product_id', $product->id)
+                    ->where('product_variant_id', $variant->id)
+                    ->whereKey($id)
+                    ->first();
+                if ($model) {
+                    $model->update([
+                        'path' => $path,
+                        'disk' => $disk,
+                        'alt_text' => $img['alt_text'] ?? null,
+                        'sort_order' => (int) ($img['sort_order'] ?? $j),
+                        'is_primary' => (bool) ($img['is_primary'] ?? false),
+                    ]);
+                    $idsToKeep[] = $model->id;
+                }
+            } else {
+                $created = ProductImage::query()->create([
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variant->id,
+                    'path' => $path,
+                    'disk' => $disk,
+                    'alt_text' => $img['alt_text'] ?? null,
+                    'sort_order' => (int) ($img['sort_order'] ?? $j),
+                    'is_primary' => (bool) ($img['is_primary'] ?? false),
+                ]);
+                $idsToKeep[] = $created->id;
+            }
+        }
+
+        $q = ProductImage::query()
+            ->where('product_id', $product->id)
+            ->where('product_variant_id', $variant->id);
+
+        if ($idsToKeep === []) {
+            $q->delete();
+        } else {
+            $q->whereNotIn('id', $idsToKeep)->delete();
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $videos
+     */
+    private function syncVariantVideos(Product $product, ProductVariant $variant, array $videos): void
+    {
+        $idsToKeep = [];
+
+        foreach ($videos as $j => $vid) {
+            $url = isset($vid['url']) ? trim((string) $vid['url']) : '';
+            if ($url === '') {
+                continue;
+            }
+
+            $id = isset($vid['id']) ? (int) $vid['id'] : 0;
+
+            if ($id > 0) {
+                $model = ProductVideo::query()
+                    ->where('product_id', $product->id)
+                    ->where('product_variant_id', $variant->id)
+                    ->whereKey($id)
+                    ->first();
+                if ($model) {
+                    $model->update([
+                        'url' => $url,
+                        'provider' => $vid['provider'] ?? null,
+                        'sort_order' => (int) ($vid['sort_order'] ?? $j),
+                    ]);
+                    $idsToKeep[] = $model->id;
+                }
+            } else {
+                $created = ProductVideo::query()->create([
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variant->id,
+                    'url' => $url,
+                    'provider' => $vid['provider'] ?? null,
+                    'sort_order' => (int) ($vid['sort_order'] ?? $j),
+                ]);
+                $idsToKeep[] = $created->id;
+            }
+        }
+
+        $q = ProductVideo::query()
+            ->where('product_id', $product->id)
+            ->where('product_variant_id', $variant->id);
+
+        if ($idsToKeep === []) {
+            $q->delete();
+        } else {
+            $q->whereNotIn('id', $idsToKeep)->delete();
+        }
+    }
+
+    private function normalizeVariantColorHex(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $v = trim((string) $value);
+        if ($v === '') {
+            return null;
+        }
+
+        if (preg_match('/^#([0-9A-Fa-f]{6})$/', $v)) {
+            return strtolower($v);
+        }
+
+        if (preg_match('/^#([0-9A-Fa-f]{3})$/', $v, $m)) {
+            $s = $m[1];
+
+            return strtolower('#'.$s[0].$s[0].$s[1].$s[1].$s[2].$s[2]);
+        }
+
+        return null;
     }
 }

@@ -2,6 +2,15 @@ import axios from 'axios';
 
 export const ADMIN_API_TOKEN_KEY = 'admin_api_token';
 
+/**
+ * Sanctum `statefulApi()` runs CSRF on /api for first-party hosts. Keep the
+ * XSRF-TOKEN cookie aligned with the session (e.g. after `session()->regenerate()`
+ * in admin session bootstrap).
+ */
+async function refreshSanctumCsrfCookie(): Promise<void> {
+    await axios.get('/sanctum/csrf-cookie');
+}
+
 export type AdminApiEnvelope<T> = {
     success: boolean;
     message: string;
@@ -38,6 +47,8 @@ export async function adminApiPost<T>(
     path: string,
     data: Record<string, unknown> = {},
 ): Promise<T> {
+    await refreshSanctumCsrfCookie();
+
     const token = getAdminApiToken();
     const headers: Record<string, string> = {
         Accept: 'application/json',
@@ -47,6 +58,30 @@ export async function adminApiPost<T>(
     }
 
     const res = await axios.post<T>(`/api/v1/admin${path}`, data, { headers });
+
+    return res.data;
+}
+
+/**
+ * Multipart admin API (e.g. media upload). Do not set Content-Type manually.
+ */
+export async function adminApiPostMultipart<T>(
+    path: string,
+    formData: FormData,
+): Promise<T> {
+    await refreshSanctumCsrfCookie();
+
+    const token = getAdminApiToken();
+    const headers: Record<string, string> = {
+        Accept: 'application/json',
+    };
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await axios.post<T>(`/api/v1/admin${path}`, formData, {
+        headers,
+    });
 
     return res.data;
 }

@@ -14,8 +14,24 @@ import {
 } from '@/admin/adminTheme';
 import {
     adminApiPost,
+    adminApiPostMultipart,
     type AdminApiEnvelope,
 } from '@/api/adminClient';
+import {
+    FASHION_SIZE_FORM_OTHER,
+    FASHION_SIZE_OPTION_GROUPS,
+    FASHION_SIZE_OTHER,
+    fashionCustomSizeInputValue,
+    fashionSizeSelectValue,
+    isCustomFashionSize,
+    normalizeVariantSizeForApi,
+} from '@/constants/fashionSizes';
+import {
+    colorPickerInputValue,
+    isHexColorString,
+    normalizeColorHexForApi,
+    normalizeHexColor6,
+} from '@/lib/variantColor';
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -29,7 +45,10 @@ type Variant = {
     is_default: boolean;
     size?: string | null;
     color?: string | null;
+    color_hex?: string | null;
     barcode?: string | null;
+    images?: ProductImage[];
+    videos?: ProductVideo[];
 };
 
 type ProductImage = {
@@ -38,6 +57,7 @@ type ProductImage = {
     alt_text?: string | null;
     sort_order?: number;
     is_primary?: boolean;
+    product_variant_id?: number | null;
 };
 
 type ProductVideo = {
@@ -45,6 +65,7 @@ type ProductVideo = {
     url: string;
     provider?: string | null;
     sort_order?: number;
+    product_variant_id?: number | null;
 };
 
 type Product = {
@@ -89,20 +110,74 @@ type VariantFormRow = {
     stock: number;
     size: string;
     color: string;
+    color_hex: string;
     barcode: string;
     is_default: boolean;
+    images: ImageFormRow[];
+    videos: VideoFormRow[];
 };
 
 type ImageFormRow = {
+    id?: number;
     path: string;
     alt_text: string;
     is_primary: boolean;
 };
 
 type VideoFormRow = {
+    id?: number;
     url: string;
     provider: string;
 };
+
+function mapApiImageToFormRow(img: ProductImage): ImageFormRow {
+    return {
+        id: img.id,
+        path: img.path,
+        alt_text: img.alt_text ?? '',
+        is_primary: Boolean(img.is_primary),
+    };
+}
+
+function mapApiVideoToFormRow(v: ProductVideo): VideoFormRow {
+    return {
+        id: v.id,
+        url: v.url,
+        provider: v.provider ?? '',
+    };
+}
+
+function productImagePreviewSrc(path: string): string {
+    const p = path.trim();
+    if (!p) {
+        return '';
+    }
+    if (/^https?:\/\//i.test(p)) {
+        return p;
+    }
+    if (p.startsWith('/')) {
+        return p;
+    }
+
+    return `/storage/${p}`;
+}
+
+function isExternalHttpUrl(value: string): boolean {
+    return /^https?:\/\//i.test(value.trim());
+}
+
+function isHostedEmbedVideoUrl(url: string): boolean {
+    const u = url.trim().toLowerCase();
+    if (!/^https?:\/\//i.test(u)) {
+        return false;
+    }
+
+    return (
+        u.includes('youtube.com') ||
+        u.includes('youtu.be') ||
+        u.includes('vimeo.com')
+    );
+}
 
 function emptyVariantRow(isDefault: boolean): VariantFormRow {
     return {
@@ -111,22 +186,96 @@ function emptyVariantRow(isDefault: boolean): VariantFormRow {
         stock: 0,
         size: '',
         color: '',
+        color_hex: '',
         barcode: '',
         is_default: isDefault,
+        images: [{ path: '', alt_text: '', is_primary: true }],
+        videos: [{ url: '', provider: '' }],
     };
 }
 
-function mapVariantToRow(v: Variant): VariantFormRow {
+function mapVariantToRow(
+    v: Variant,
+    options: {
+        prependImages?: ProductImage[];
+        prependVideos?: ProductVideo[];
+    } = {},
+): VariantFormRow {
+    const rawName = v.color ?? '';
+    const rawHex = v.color_hex ?? '';
+    const nameLooksHex = isHexColorString(rawName);
+
+    let color = '';
+    let color_hex = '';
+
+    const hexFromField = rawHex ? normalizeHexColor6(rawHex) : null;
+    const hexFromName = nameLooksHex ? normalizeHexColor6(rawName) : null;
+
+    if (hexFromField) {
+        color_hex = hexFromField;
+        color = nameLooksHex ? '' : rawName.trim();
+    } else if (hexFromName) {
+        color_hex = hexFromName;
+        color = '';
+    } else {
+        color = rawName.trim();
+    }
+
+    const prependImages = (options.prependImages ?? []).map(mapApiImageToFormRow);
+    const prependVideos = (options.prependVideos ?? []).map(mapApiVideoToFormRow);
+    const variantImages = (v.images ?? []).map(mapApiImageToFormRow);
+    const variantVideos = (v.videos ?? []).map(mapApiVideoToFormRow);
+
+    let images = [...prependImages, ...variantImages];
+    if (images.length === 0) {
+        images = [{ path: '', alt_text: '', is_primary: true }];
+    } else if (!images.some((img) => img.is_primary)) {
+        images = images.map((r, idx) => ({
+            ...r,
+            is_primary: idx === 0,
+        }));
+    }
+
+    let videos = [...prependVideos, ...variantVideos];
+    if (videos.length === 0) {
+        videos = [{ url: '', provider: '' }];
+    }
+
     return {
         id: v.id,
         sku: v.sku,
         price: String(v.price),
         stock: v.stock_quantity,
         size: v.size ?? '',
-        color: v.color ?? '',
+        color,
+        color_hex,
         barcode: v.barcode ?? '',
         is_default: v.is_default,
+        images,
+        videos,
     };
+}
+
+function buildInitialVariants(existing: Product | null): VariantFormRow[] {
+    if (!existing?.variants?.length) {
+        return [emptyVariantRow(true)];
+    }
+
+    const defaultVariant =
+        existing.variants.find((v) => v.is_default) ?? existing.variants[0];
+    const orphanImages = (existing.images ?? []).filter(
+        (img) => !img.product_variant_id,
+    );
+    const orphanVideos = (existing.videos ?? []).filter(
+        (vid) => !vid.product_variant_id,
+    );
+
+    return existing.variants.map((v) =>
+        mapVariantToRow(v, {
+            prependImages: v.id === defaultVariant.id ? orphanImages : [],
+            prependVideos: v.id === defaultVariant.id ? orphanVideos : [],
+        }),
+    );
 }
 
 export default function Form() {
@@ -176,25 +325,7 @@ export default function Form() {
     );
 
     const [variants, setVariants] = useState<VariantFormRow[]>(() =>
-        existing?.variants?.length
-            ? existing.variants.map(mapVariantToRow)
-            : [emptyVariantRow(true)],
-    );
-
-    const [imageRows, setImageRows] = useState<ImageFormRow[]>(() =>
-        existing ? [] : [{ path: '', alt_text: '', is_primary: true }],
-    );
-
-    const [additionalImages, setAdditionalImages] = useState<ImageFormRow[]>(
-        [],
-    );
-
-    const [videoRows, setVideoRows] = useState<VideoFormRow[]>(() =>
-        existing ? [] : [{ url: '', provider: '' }],
-    );
-
-    const [additionalVideos, setAdditionalVideos] = useState<VideoFormRow[]>(
-        [],
+        buildInitialVariants(existing),
     );
 
     useEffect(() => {
@@ -212,24 +343,127 @@ export default function Form() {
         setGenderId(initialProductFields.gender_id);
 
         if (existing?.variants?.length) {
-            setVariants(existing.variants.map(mapVariantToRow));
+            setVariants(buildInitialVariants(existing));
         } else {
             setVariants([emptyVariantRow(true)]);
-        }
-
-        if (!existing) {
-            setImageRows([{ path: '', alt_text: '', is_primary: true }]);
-            setVideoRows([{ url: '', provider: '' }]);
-        } else {
-            setImageRows([]);
-            setAdditionalImages([]);
-            setVideoRows([]);
-            setAdditionalVideos([]);
         }
     }, [existing?.id, initialProductFields, existing]);
 
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [uploadBusyKey, setUploadBusyKey] = useState<string | null>(null);
+
+    const handleVariantImageUpload = async (
+        variantIndex: number,
+        imageIndex: number,
+        file: File | undefined,
+        input: HTMLInputElement,
+    ) => {
+        if (!file || uploadBusyKey) {
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            setError('Only image files can be uploaded here.');
+
+            return;
+        }
+
+        const key = `v${variantIndex}-img${imageIndex}`;
+        setUploadBusyKey(key);
+        setError(null);
+
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await adminApiPostMultipart<
+                AdminApiEnvelope<{ path: string; disk: string; url: string }>
+            >('/media/upload-product-image', fd);
+
+            if (!res.success || !res.data?.path) {
+                setError(res.message || 'Image upload failed.');
+
+                return;
+            }
+
+            const newPath = res.data.path;
+            setVariants((rows) =>
+                rows.map((r, i) => {
+                    if (i !== variantIndex) {
+                        return r;
+                    }
+
+                    return {
+                        ...r,
+                        images: r.images.map((img, j) =>
+                            j === imageIndex ? { ...img, path: newPath } : img,
+                        ),
+                    };
+                }),
+            );
+        } catch {
+            setError('Image upload failed.');
+        } finally {
+            setUploadBusyKey(null);
+            input.value = '';
+        }
+    };
+
+    const handleVariantVideoUpload = async (
+        variantIndex: number,
+        videoIndex: number,
+        file: File | undefined,
+        input: HTMLInputElement,
+    ) => {
+        if (!file || uploadBusyKey) {
+            return;
+        }
+        if (!file.type.startsWith('video/')) {
+            setError('Only video files can be uploaded here.');
+
+            return;
+        }
+
+        const key = `v${variantIndex}-vid${videoIndex}`;
+        setUploadBusyKey(key);
+        setError(null);
+
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await adminApiPostMultipart<
+                AdminApiEnvelope<{ url: string; path: string }>
+            >('/media/upload-product-video', fd);
+
+            if (!res.success || !res.data?.url) {
+                setError(res.message || 'Video upload failed.');
+
+                return;
+            }
+
+            const newUrl = res.data.url;
+            setVariants((rows) =>
+                rows.map((r, i) => {
+                    if (i !== variantIndex) {
+                        return r;
+                    }
+
+                    return {
+                        ...r,
+                        videos: r.videos.map((vr, j) =>
+                            j === videoIndex
+                                ? { ...vr, url: newUrl, provider: '' }
+                                : vr,
+                        ),
+                    };
+                }),
+            );
+        } catch {
+            setError('Video upload failed.');
+        } finally {
+            setUploadBusyKey(null);
+            input.value = '';
+        }
+    };
 
     const setDefaultVariant = (index: number) => {
         setVariants((rows) =>
@@ -240,13 +474,24 @@ export default function Form() {
         );
     };
 
-    const setImagePrimary = (index: number, isCreate: boolean) => {
-        const updater = isCreate ? setImageRows : setAdditionalImages;
-        updater((rows) =>
-            rows.map((r, i) => ({
-                ...r,
-                is_primary: i === index,
-            })),
+    const setVariantImagePrimary = (
+        variantIndex: number,
+        imageIndex: number,
+    ) => {
+        setVariants((rows) =>
+            rows.map((r, i) => {
+                if (i !== variantIndex) {
+                    return r;
+                }
+
+                return {
+                    ...r,
+                    images: r.images.map((img, j) => ({
+                        ...img,
+                        is_primary: j === imageIndex,
+                    })),
+                };
+            }),
         );
     };
 
@@ -265,46 +510,46 @@ export default function Form() {
             }
             if (Number.isNaN(priceNum) || priceNum < 0) {
                 setError(`Invalid price for SKU "${row.sku}".`);
+                setProcessing(false);
 
                 return;
             }
         }
 
-        const variantsPayload = variants.map((v) => ({
-            ...(v.id ? { id: v.id } : {}),
-            sku: v.sku.trim(),
-            price: Number(v.price),
-            stock_quantity: Number(v.stock) || 0,
-            size: v.size.trim() || null,
-            color: v.color.trim() || null,
-            barcode: v.barcode.trim() || null,
-            is_default: v.is_default,
-        }));
-
-        const buildImagePayload = (rows: ImageFormRow[]) =>
+        const buildVariantImagePayload = (rows: ImageFormRow[]) =>
             rows
                 .filter((r) => r.path.trim() !== '')
                 .map((r, i) => ({
+                    ...(r.id != null && r.id > 0 ? { id: r.id } : {}),
                     path: r.path.trim(),
                     alt_text: r.alt_text.trim() || null,
                     sort_order: i,
                     is_primary: r.is_primary,
                 }));
 
-        const imagesPayloadCreate = buildImagePayload(imageRows);
-        const newImagesPayloadEdit = buildImagePayload(additionalImages);
-
-        const buildVideoPayload = (rows: VideoFormRow[]) =>
+        const buildVariantVideoPayload = (rows: VideoFormRow[]) =>
             rows
                 .filter((r) => r.url.trim() !== '')
                 .map((r, i) => ({
+                    ...(r.id != null && r.id > 0 ? { id: r.id } : {}),
                     url: r.url.trim(),
                     provider: r.provider.trim() || null,
                     sort_order: i,
                 }));
 
-        const videosPayloadCreate = buildVideoPayload(videoRows);
-        const newVideosPayloadEdit = buildVideoPayload(additionalVideos);
+        const variantsPayload = variants.map((v) => ({
+            ...(v.id ? { id: v.id } : {}),
+            sku: v.sku.trim(),
+            price: Number(v.price),
+            stock_quantity: Number(v.stock) || 0,
+            size: normalizeVariantSizeForApi(v.size),
+            color: v.color.trim() || null,
+            color_hex: normalizeColorHexForApi(v.color_hex),
+            barcode: v.barcode.trim() || null,
+            is_default: v.is_default,
+            images: buildVariantImagePayload(v.images),
+            videos: buildVariantVideoPayload(v.videos),
+        }));
 
         try {
             const payload: Record<string, unknown> = {
@@ -326,8 +571,6 @@ export default function Form() {
             let res: AdminApiEnvelope<Product>;
 
             if (existing) {
-                payload.new_images = newImagesPayloadEdit;
-                payload.new_videos = newVideosPayloadEdit;
                 res = await adminApiPost<AdminApiEnvelope<Product>>(
                     '/products/update',
                     {
@@ -336,8 +579,6 @@ export default function Form() {
                     },
                 );
             } else {
-                payload.images = imagesPayloadCreate;
-                payload.videos = videosPayloadCreate;
                 res = await adminApiPost<AdminApiEnvelope<Product>>(
                     '/products/store',
                     payload,
@@ -624,8 +865,11 @@ export default function Form() {
                             <h3 className={adminSmallHeading}>Variants</h3>
                             <p className={`mt-1 ${adminMutedText}`}>
                                 At least one variant (SKU + price). Mark one as
-                                default for storefront pricing. Optional size /
-                                color / barcode per row.
+                                default for storefront pricing. Size uses a
+                                fashion list (letter, EU numeric, one size); pick
+                                “Other” for custom values. Color: use the picker
+                                for hex or type a name (e.g. Navy). Optional
+                                barcode per row.
                             </p>
                             <div className="mt-4 space-y-4">
                                 {variants.map((row, index) => (
@@ -753,30 +997,120 @@ export default function Form() {
                                                 >
                                                     Size
                                                 </label>
-                                                <input
-                                                    value={row.size}
-                                                    onChange={(e) =>
+                                                <select
+                                                    value={fashionSizeSelectValue(
+                                                        row.size,
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const v = e.target.value;
                                                         setVariants((rows) =>
-                                                            rows.map((r, i) =>
-                                                                i === index
-                                                                    ? {
-                                                                          ...r,
-                                                                          size: e
-                                                                              .target
-                                                                              .value,
-                                                                      }
-                                                                    : r,
-                                                            ),
-                                                        )
-                                                    }
+                                                            rows.map((r, i) => {
+                                                                if (i !== index) {
+                                                                    return r;
+                                                                }
+                                                                if (
+                                                                    v ===
+                                                                    FASHION_SIZE_OTHER
+                                                                ) {
+                                                                    return {
+                                                                        ...r,
+                                                                        size:
+                                                                            isCustomFashionSize(
+                                                                                r.size,
+                                                                            )
+                                                                                ? r.size
+                                                                                : FASHION_SIZE_FORM_OTHER,
+                                                                    };
+                                                                }
+                                                                if (v === '') {
+                                                                    return {
+                                                                        ...r,
+                                                                        size: '',
+                                                                    };
+                                                                }
+
+                                                                return {
+                                                                    ...r,
+                                                                    size: v,
+                                                                };
+                                                            }),
+                                                        );
+                                                    }}
                                                     className={adminInput}
-                                                />
+                                                >
+                                                    <option value="">
+                                                        — None —
+                                                    </option>
+                                                    {FASHION_SIZE_OPTION_GROUPS.map(
+                                                        (group) => (
+                                                            <optgroup
+                                                                key={
+                                                                    group.label
+                                                                }
+                                                                label={
+                                                                    group.label
+                                                                }
+                                                            >
+                                                                {group.options.map(
+                                                                    (s) => (
+                                                                        <option
+                                                                            key={
+                                                                                s
+                                                                            }
+                                                                            value={
+                                                                                s
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                s
+                                                                            }
+                                                                        </option>
+                                                                    ),
+                                                                )}
+                                                            </optgroup>
+                                                        ),
+                                                    )}
+                                                    <option value={FASHION_SIZE_OTHER}>
+                                                        Other (custom)…
+                                                    </option>
+                                                </select>
+                                                {fashionSizeSelectValue(
+                                                    row.size,
+                                                ) === FASHION_SIZE_OTHER ? (
+                                                    <input
+                                                        value={fashionCustomSizeInputValue(
+                                                            row.size,
+                                                        )}
+                                                        onChange={(e) =>
+                                                            setVariants(
+                                                                (rows) =>
+                                                                    rows.map(
+                                                                        (
+                                                                            r,
+                                                                            i,
+                                                                        ) =>
+                                                                            i ===
+                                                                            index
+                                                                                ? {
+                                                                                      ...r,
+                                                                                      size: e
+                                                                                          .target
+                                                                                          .value,
+                                                                                  }
+                                                                                : r,
+                                                                    ),
+                                                            )
+                                                        }
+                                                        placeholder="e.g. 42½, 6–8Y"
+                                                        className={`${adminInput} mt-2`}
+                                                    />
+                                                ) : null}
                                             </div>
-                                            <div>
+                                            <div className="sm:col-span-2 lg:col-span-3">
                                                 <label
                                                     className={adminLabel}
                                                 >
-                                                    Color
+                                                    Color name
                                                 </label>
                                                 <input
                                                     value={row.color}
@@ -794,8 +1128,96 @@ export default function Form() {
                                                             ),
                                                         )
                                                     }
+                                                    placeholder="e.g. Navy, Burgundy"
                                                     className={adminInput}
                                                 />
+                                            </div>
+                                            <div className="sm:col-span-2 lg:col-span-3">
+                                                <label
+                                                    className={adminLabel}
+                                                >
+                                                    Color code (hex)
+                                                </label>
+                                                <div className="mt-1 flex flex-wrap items-center gap-3">
+                                                    <input
+                                                        type="color"
+                                                        aria-label="Color picker"
+                                                        title="Pick hex"
+                                                        className="h-10 w-14 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-white p-0 shadow-sm dark:border-slate-600 dark:bg-slate-900 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-moz-color-swatch]:rounded-md"
+                                                        value={colorPickerInputValue(
+                                                            row.color_hex,
+                                                        )}
+                                                        onChange={(e) =>
+                                                            setVariants(
+                                                                (rows) =>
+                                                                    rows.map(
+                                                                        (
+                                                                            r,
+                                                                            i,
+                                                                        ) =>
+                                                                            i ===
+                                                                            index
+                                                                                ? {
+                                                                                      ...r,
+                                                                                      color_hex:
+                                                                                          e
+                                                                                              .target
+                                                                                              .value.toLowerCase(),
+                                                                                  }
+                                                                                : r,
+                                                                    ),
+                                                            )
+                                                        }
+                                                    />
+                                                    {isHexColorString(
+                                                        row.color_hex,
+                                                    ) ? (
+                                                        <span
+                                                            className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 shadow-inner dark:border-slate-600"
+                                                            style={{
+                                                                backgroundColor:
+                                                                    normalizeHexColor6(
+                                                                        row.color_hex,
+                                                                    ) ?? undefined,
+                                                            }}
+                                                            title="Preview"
+                                                            aria-hidden
+                                                        />
+                                                    ) : null}
+                                                    <input
+                                                        value={row.color_hex}
+                                                        onChange={(e) =>
+                                                            setVariants(
+                                                                (rows) =>
+                                                                    rows.map(
+                                                                        (
+                                                                            r,
+                                                                            i,
+                                                                        ) =>
+                                                                            i ===
+                                                                            index
+                                                                                ? {
+                                                                                      ...r,
+                                                                                      color_hex:
+                                                                                          e
+                                                                                              .target
+                                                                                              .value,
+                                                                                  }
+                                                                                : r,
+                                                                    ),
+                                                            )
+                                                        }
+                                                        placeholder="#2563eb"
+                                                        className={`${adminInput} min-w-[10rem] flex-1 font-mono text-sm`}
+                                                    />
+                                                </div>
+                                                <p
+                                                    className={`mt-1.5 ${adminMutedText}`}
+                                                >
+                                                    Both color name and hex are
+                                                    saved. Picker and hex field
+                                                    stay in sync with the code.
+                                                </p>
                                             </div>
                                             <div>
                                                 <label
@@ -824,6 +1246,539 @@ export default function Form() {
                                                 />
                                             </div>
                                         </div>
+                                        <div className="mt-5 space-y-5 border-t border-slate-200 pt-5 dark:border-slate-700">
+                                            <div>
+                                                <h4
+                                                    className={`text-sm font-semibold text-slate-800 dark:text-slate-100`}
+                                                >
+                                                    Images (this variant)
+                                                </h4>
+                                                <p
+                                                    className={`mt-1 ${adminMutedText}`}
+                                                >
+                                                    Upload image files only
+                                                    (JPEG, PNG, WebP, and other
+                                                    common image types). Choose
+                                                    one primary for catalog
+                                                    thumbnails for this SKU.
+                                                </p>
+                                                <div className="mt-3 space-y-4">
+                                                    {row.images.map(
+                                                        (imgRow, imgIndex) => (
+                                                            <div
+                                                                key={`v-${index}-img-${imgRow.id ?? imgIndex}`}
+                                                                className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"
+                                                            >
+                                                                <div className="mb-2 flex justify-end">
+                                                                    {row.images
+                                                                        .length >
+                                                                    1 ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                setVariants(
+                                                                                    (
+                                                                                        rows,
+                                                                                    ) =>
+                                                                                        rows.map(
+                                                                                            (
+                                                                                                r,
+                                                                                                i,
+                                                                                            ) =>
+                                                                                                i ===
+                                                                                                index
+                                                                                                    ? {
+                                                                                                          ...r,
+                                                                                                          images:
+                                                                                                              r.images.filter(
+                                                                                                                  (
+                                                                                                                      _,
+                                                                                                                      j,
+                                                                                                                  ) =>
+                                                                                                                      j !==
+                                                                                                                      imgIndex,
+                                                                                                              ),
+                                                                                                      }
+                                                                                                    : r,
+                                                                                        ),
+                                                                                )
+                                                                            }
+                                                                            className="text-sm font-semibold text-red-600 dark:text-red-400"
+                                                                        >
+                                                                            Remove
+                                                                        </button>
+                                                                    ) : null}
+                                                                </div>
+                                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                                    <div className="space-y-2 sm:col-span-2">
+                                                                        <label
+                                                                            className={
+                                                                                adminLabel
+                                                                            }
+                                                                        >
+                                                                            Image
+                                                                            file
+                                                                        </label>
+                                                                        <input
+                                                                            type="file"
+                                                                            accept="image/*"
+                                                                            disabled={
+                                                                                uploadBusyKey ===
+                                                                                `v${index}-img${imgIndex}`
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) => {
+                                                                                const f =
+                                                                                    e
+                                                                                        .target
+                                                                                        .files?.[0];
+                                                                                void handleVariantImageUpload(
+                                                                                    index,
+                                                                                    imgIndex,
+                                                                                    f,
+                                                                                    e.currentTarget,
+                                                                                );
+                                                                            }}
+                                                                            className={`block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-violet-500 dark:text-slate-200 dark:file:bg-violet-500 dark:hover:file:bg-violet-400`}
+                                                                        />
+                                                                        {uploadBusyKey ===
+                                                                        `v${index}-img${imgIndex}` ? (
+                                                                            <p
+                                                                                className={`text-xs ${adminMutedText}`}
+                                                                            >
+                                                                                Uploading…
+                                                                            </p>
+                                                                        ) : null}
+                                                                        {imgRow.path.trim() !==
+                                                                        '' ? (
+                                                                            <div className="mt-2 flex flex-wrap items-start gap-3">
+                                                                                {productImagePreviewSrc(
+                                                                                    imgRow.path,
+                                                                                ) ? (
+                                                                                    <img
+                                                                                        src={productImagePreviewSrc(
+                                                                                            imgRow.path,
+                                                                                        )}
+                                                                                        alt=""
+                                                                                        className="h-24 w-24 rounded-lg border border-slate-200 object-cover dark:border-slate-600"
+                                                                                    />
+                                                                                ) : null}
+                                                                                <div className="min-w-0 flex-1 space-y-2">
+                                                                                    {isExternalHttpUrl(
+                                                                                        imgRow.path,
+                                                                                    ) ? (
+                                                                                        <p
+                                                                                            className={`text-xs ${adminMutedText}`}
+                                                                                        >
+                                                                                            External
+                                                                                            image
+                                                                                            URL
+                                                                                            (upload
+                                                                                            a
+                                                                                            file
+                                                                                            to
+                                                                                            replace).
+                                                                                        </p>
+                                                                                    ) : null}
+                                                                                    <p className="truncate font-mono text-xs text-slate-600 dark:text-slate-400">
+                                                                                        {
+                                                                                            imgRow.path
+                                                                                        }
+                                                                                    </p>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() =>
+                                                                                            setVariants(
+                                                                                                (
+                                                                                                    rows,
+                                                                                                ) =>
+                                                                                                    rows.map(
+                                                                                                        (
+                                                                                                            r,
+                                                                                                            i,
+                                                                                                        ) =>
+                                                                                                            i ===
+                                                                                                            index
+                                                                                                                ? {
+                                                                                                                      ...r,
+                                                                                                                      images:
+                                                                                                                          r.images.map(
+                                                                                                                              (
+                                                                                                                                  ir,
+                                                                                                                                  j,
+                                                                                                                              ) =>
+                                                                                                                                  j ===
+                                                                                                                                  imgIndex
+                                                                                                                                      ? {
+                                                                                                                                            ...ir,
+                                                                                                                                            path: '',
+                                                                                                                                            id: undefined,
+                                                                                                                                        }
+                                                                                                                                      : ir,
+                                                                                                                          ),
+                                                                                                                  }
+                                                                                                                : r,
+                                                                                                    ),
+                                                                                            )
+                                                                                        }
+                                                                                        className={`text-sm font-semibold text-slate-600 underline dark:text-slate-300`}
+                                                                                    >
+                                                                                        Clear
+                                                                                        image
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <p
+                                                                                className={`text-xs ${adminMutedText}`}
+                                                                            >
+                                                                                No
+                                                                                image
+                                                                                selected
+                                                                                yet.
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <label
+                                                                            className={
+                                                                                adminLabel
+                                                                            }
+                                                                        >
+                                                                            Alt
+                                                                            text
+                                                                        </label>
+                                                                        <input
+                                                                            value={
+                                                                                imgRow.alt_text
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                setVariants(
+                                                                                    (
+                                                                                        rows,
+                                                                                    ) =>
+                                                                                        rows.map(
+                                                                                            (
+                                                                                                r,
+                                                                                                i,
+                                                                                            ) =>
+                                                                                                i ===
+                                                                                                index
+                                                                                                    ? {
+                                                                                                          ...r,
+                                                                                                          images:
+                                                                                                              r.images.map(
+                                                                                                                  (
+                                                                                                                      ir,
+                                                                                                                      j,
+                                                                                                                  ) =>
+                                                                                                                      j ===
+                                                                                                                      imgIndex
+                                                                                                                          ? {
+                                                                                                                                ...ir,
+                                                                                                                                alt_text:
+                                                                                                                                    e
+                                                                                                                                        .target
+                                                                                                                                        .value,
+                                                                                                                            }
+                                                                                                                          : ir,
+                                                                                                              ),
+                                                                                                      }
+                                                                                                    : r,
+                                                                                        ),
+                                                                                )
+                                                                            }
+                                                                            className={
+                                                                                adminInput
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                    <label className="flex items-center gap-2 pt-7 sm:pt-8">
+                                                                        <input
+                                                                            type="radio"
+                                                                            name={`variant-${index}-img-primary`}
+                                                                            checked={
+                                                                                imgRow.is_primary
+                                                                            }
+                                                                            onChange={() =>
+                                                                                setVariantImagePrimary(
+                                                                                    index,
+                                                                                    imgIndex,
+                                                                                )
+                                                                            }
+                                                                            className="border-slate-300 text-violet-600 focus:ring-violet-500"
+                                                                        />
+                                                                        <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                                            Primary
+                                                                            for this
+                                                                            variant
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        ),
+                                                    )}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setVariants((rows) =>
+                                                            rows.map((r, i) =>
+                                                                i === index
+                                                                    ? {
+                                                                          ...r,
+                                                                          images: [
+                                                                              ...r.images,
+                                                                              {
+                                                                                  path: '',
+                                                                                  alt_text:
+                                                                                      '',
+                                                                                  is_primary:
+                                                                                      false,
+                                                                              },
+                                                                          ],
+                                                                      }
+                                                                    : r,
+                                                            ),
+                                                        )
+                                                    }
+                                                    className={`mt-3 ${adminCancelBtn}`}
+                                                >
+                                                    + Add image row
+                                                </button>
+                                            </div>
+                                            <div>
+                                                <h4
+                                                    className={`text-sm font-semibold text-slate-800 dark:text-slate-100`}
+                                                >
+                                                    Videos (this variant)
+                                                </h4>
+                                                <p
+                                                    className={`mt-1 ${adminMutedText}`}
+                                                >
+                                                    Upload video files only
+                                                    (MP4, WebM, and similar). Existing
+                                                    YouTube or Vimeo links stay
+                                                    attached until you upload a
+                                                    replacement file.
+                                                </p>
+                                                <div className="mt-3 space-y-4">
+                                                    {row.videos.map(
+                                                        (vidRow, vidIndex) => (
+                                                            <div
+                                                                key={`v-${index}-vid-${vidRow.id ?? vidIndex}`}
+                                                                className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"
+                                                            >
+                                                                <div className="mb-2 flex justify-end">
+                                                                    {row.videos
+                                                                        .length >
+                                                                    1 ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                setVariants(
+                                                                                    (
+                                                                                        rows,
+                                                                                    ) =>
+                                                                                        rows.map(
+                                                                                            (
+                                                                                                r,
+                                                                                                i,
+                                                                                            ) =>
+                                                                                                i ===
+                                                                                                index
+                                                                                                    ? {
+                                                                                                          ...r,
+                                                                                                          videos:
+                                                                                                              r.videos.filter(
+                                                                                                                  (
+                                                                                                                      _,
+                                                                                                                      j,
+                                                                                                                  ) =>
+                                                                                                                      j !==
+                                                                                                                      vidIndex,
+                                                                                                              ),
+                                                                                                      }
+                                                                                                    : r,
+                                                                                        ),
+                                                                                )
+                                                                            }
+                                                                            className="text-sm font-semibold text-red-600 dark:text-red-400"
+                                                                        >
+                                                                            Remove
+                                                                        </button>
+                                                                    ) : null}
+                                                                </div>
+                                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                                    <div className="space-y-2 sm:col-span-2">
+                                                                        <label
+                                                                            className={
+                                                                                adminLabel
+                                                                            }
+                                                                        >
+                                                                            Video
+                                                                            file
+                                                                        </label>
+                                                                        <input
+                                                                            type="file"
+                                                                            accept="video/*"
+                                                                            disabled={
+                                                                                uploadBusyKey ===
+                                                                                `v${index}-vid${vidIndex}`
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) => {
+                                                                                const f =
+                                                                                    e
+                                                                                        .target
+                                                                                        .files?.[0];
+                                                                                void handleVariantVideoUpload(
+                                                                                    index,
+                                                                                    vidIndex,
+                                                                                    f,
+                                                                                    e.currentTarget,
+                                                                                );
+                                                                            }}
+                                                                            className={`block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-violet-500 dark:text-slate-200 dark:file:bg-violet-500 dark:hover:file:bg-violet-400`}
+                                                                        />
+                                                                        {uploadBusyKey ===
+                                                                        `v${index}-vid${vidIndex}` ? (
+                                                                            <p
+                                                                                className={`text-xs ${adminMutedText}`}
+                                                                            >
+                                                                                Uploading…
+                                                                            </p>
+                                                                        ) : null}
+                                                                        {vidRow.url.trim() !==
+                                                                        '' ? (
+                                                                            <div className="mt-2 space-y-2">
+                                                                                {isHostedEmbedVideoUrl(
+                                                                                    vidRow.url,
+                                                                                ) ? (
+                                                                                    <p
+                                                                                        className={`text-xs ${adminMutedText}`}
+                                                                                    >
+                                                                                        Embedded
+                                                                                        video
+                                                                                        link
+                                                                                        (upload
+                                                                                        a
+                                                                                        file
+                                                                                        to
+                                                                                        replace):{' '}
+                                                                                        <span className="break-all font-mono text-slate-600 dark:text-slate-400">
+                                                                                            {
+                                                                                                vidRow.url
+                                                                                            }
+                                                                                        </span>
+                                                                                    </p>
+                                                                                ) : (
+                                                                                    <div className="space-y-2">
+                                                                                        <video
+                                                                                            src={
+                                                                                                vidRow.url
+                                                                                            }
+                                                                                            controls
+                                                                                            className="max-h-48 max-w-full rounded-lg border border-slate-200 dark:border-slate-600"
+                                                                                        />
+                                                                                        <p className="break-all font-mono text-xs text-slate-600 dark:text-slate-400">
+                                                                                            {
+                                                                                                vidRow.url
+                                                                                            }
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                        setVariants(
+                                                                                            (
+                                                                                                rows,
+                                                                                            ) =>
+                                                                                                rows.map(
+                                                                                                    (
+                                                                                                        r,
+                                                                                                        i,
+                                                                                                    ) =>
+                                                                                                        i ===
+                                                                                                        index
+                                                                                                            ? {
+                                                                                                                  ...r,
+                                                                                                                  videos:
+                                                                                                                      r.videos.map(
+                                                                                                                          (
+                                                                                                                              vr,
+                                                                                                                              j,
+                                                                                                                          ) =>
+                                                                                                                              j ===
+                                                                                                                              vidIndex
+                                                                                                                                  ? {
+                                                                                                                                        ...vr,
+                                                                                                                                        url: '',
+                                                                                                                                        id: undefined,
+                                                                                                                                        provider:
+                                                                                                                                            '',
+                                                                                                                                    }
+                                                                                                                                  : vr,
+                                                                                                                      ),
+                                                                                                              }
+                                                                                                            : r,
+                                                                                                ),
+                                                                                        )
+                                                                                    }
+                                                                                    className={`text-sm font-semibold text-slate-600 underline dark:text-slate-300`}
+                                                                                >
+                                                                                    Clear
+                                                                                    video
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <p
+                                                                                className={`text-xs ${adminMutedText}`}
+                                                                            >
+                                                                                No
+                                                                                video
+                                                                                selected
+                                                                                yet.
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ),
+                                                    )}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setVariants((rows) =>
+                                                            rows.map((r, i) =>
+                                                                i === index
+                                                                    ? {
+                                                                          ...r,
+                                                                          videos: [
+                                                                              ...r.videos,
+                                                                              {
+                                                                                  url: '',
+                                                                                  provider:
+                                                                                      '',
+                                                                              },
+                                                                          ],
+                                                                      }
+                                                                    : r,
+                                                            ),
+                                                        )
+                                                    }
+                                                    className={`mt-3 ${adminCancelBtn}`}
+                                                >
+                                                    + Add video row
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -833,382 +1788,6 @@ export default function Form() {
                                 className={`mt-4 ${adminCancelBtn}`}
                             >
                                 + Add variant
-                            </button>
-                        </div>
-
-                        <div className={adminDividerTop}>
-                            <h3 className={adminSmallHeading}>Images</h3>
-                            <p className={`mt-1 ${adminMutedText}`}>
-                                Full image URL (https://…) or storage path
-                                under your public disk (e.g.{' '}
-                                <span className="font-mono text-xs">
-                                    products/photo.jpg
-                                </span>
-                                ). One primary image for thumbnails.
-                            </p>
-
-                            {existing &&
-                            existing.images &&
-                            existing.images.length > 0 ? (
-                                <ul className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/30">
-                                    {existing.images.map((img) => (
-                                        <li
-                                            key={img.id}
-                                            className="flex flex-wrap items-center justify-between gap-2 text-slate-700 dark:text-slate-300"
-                                        >
-                                            <span className="break-all font-mono text-xs">
-                                                {img.path}
-                                            </span>
-                                            {img.is_primary ? (
-                                                <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800 dark:bg-violet-950 dark:text-violet-200">
-                                                    Primary
-                                                </span>
-                                            ) : null}
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : null}
-
-                            <div className="mt-4 space-y-4">
-                                {(existing ? additionalImages : imageRows).map(
-                                    (row, index) => {
-                                        const rows = existing
-                                            ? additionalImages
-                                            : imageRows;
-                                        const setRows = existing
-                                            ? setAdditionalImages
-                                            : setImageRows;
-
-                                        return (
-                                            <div
-                                                key={`img-${index}`}
-                                                className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"
-                                            >
-                                                <div className="mb-2 flex justify-end">
-                                                    {rows.length > 1 ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                setRows(
-                                                                    rows.filter(
-                                                                        (
-                                                                            _,
-                                                                            i,
-                                                                        ) =>
-                                                                            i !==
-                                                                            index,
-                                                                    ),
-                                                                )
-                                                            }
-                                                            className="text-sm font-semibold text-red-600 dark:text-red-400"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    ) : null}
-                                                </div>
-                                                <div className="grid gap-3 sm:grid-cols-2">
-                                                    <div className="sm:col-span-2">
-                                                        <label
-                                                            className={
-                                                                adminLabel
-                                                            }
-                                                        >
-                                                            Image URL / path
-                                                        </label>
-                                                        <input
-                                                            value={row.path}
-                                                            onChange={(e) =>
-                                                                setRows(
-                                                                    rs =>
-                                                                        rs.map(
-                                                                            (
-                                                                                r,
-                                                                                i,
-                                                                            ) =>
-                                                                                i ===
-                                                                                index
-                                                                                    ? {
-                                                                                          ...r,
-                                                                                          path: e
-                                                                                              .target
-                                                                                              .value,
-                                                                                      }
-                                                                                    : r,
-                                                                        ),
-                                                                )
-                                                            }
-                                                            className={
-                                                                adminInput
-                                                            }
-                                                            placeholder="https://… or products/image.jpg"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label
-                                                            className={
-                                                                adminLabel
-                                                            }
-                                                        >
-                                                            Alt text
-                                                        </label>
-                                                        <input
-                                                            value={
-                                                                row.alt_text
-                                                            }
-                                                            onChange={(e) =>
-                                                                setRows(
-                                                                    rs =>
-                                                                        rs.map(
-                                                                            (
-                                                                                r,
-                                                                                i,
-                                                                            ) =>
-                                                                                i ===
-                                                                                index
-                                                                                    ? {
-                                                                                          ...r,
-                                                                                          alt_text:
-                                                                                              e
-                                                                                                  .target
-                                                                                                  .value,
-                                                                                      }
-                                                                                    : r,
-                                                                        ),
-                                                                )
-                                                            }
-                                                            className={
-                                                                adminInput
-                                                            }
-                                                        />
-                                                    </div>
-                                                    <label className="flex items-center gap-2 pt-7 sm:pt-8">
-                                                        <input
-                                                            type="radio"
-                                                            name={
-                                                                existing
-                                                                    ? 'new_img_primary'
-                                                                    : 'img_primary'
-                                                            }
-                                                            checked={
-                                                                row.is_primary
-                                                            }
-                                                            onChange={() =>
-                                                                setImagePrimary(
-                                                                    index,
-                                                                    !existing,
-                                                                )
-                                                            }
-                                                            className="border-slate-300 text-violet-600 focus:ring-violet-500"
-                                                        />
-                                                        <span className="text-sm text-slate-700 dark:text-slate-300">
-                                                            Primary image
-                                                        </span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        );
-                                    },
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    existing
-                                        ? setAdditionalImages((r) => [
-                                              ...r,
-                                              {
-                                                  path: '',
-                                                  alt_text: '',
-                                                  is_primary: r.length === 0,
-                                              },
-                                          ])
-                                        : setImageRows((r) => [
-                                              ...r,
-                                              {
-                                                  path: '',
-                                                  alt_text: '',
-                                                  is_primary: false,
-                                              },
-                                          ])
-                                }
-                                className={`mt-4 ${adminCancelBtn}`}
-                            >
-                                + Add image row
-                            </button>
-                        </div>
-
-                        <div className={adminDividerTop}>
-                            <h3 className={adminSmallHeading}>Videos</h3>
-                            <p className={`mt-1 ${adminMutedText}`}>
-                                Embed URLs (YouTube, Vimeo, or direct file).
-                                Provider is optional.
-                            </p>
-
-                            {existing &&
-                            existing.videos &&
-                            existing.videos.length > 0 ? (
-                                <ul className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/30">
-                                    {existing.videos.map((v) => (
-                                        <li
-                                            key={v.id}
-                                            className="break-all font-mono text-xs text-slate-700 dark:text-slate-300"
-                                        >
-                                            {v.url}
-                                            {v.provider
-                                                ? ` · ${v.provider}`
-                                                : ''}
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : null}
-
-                            <div className="mt-4 space-y-4">
-                                {(existing ? additionalVideos : videoRows).map(
-                                    (row, index) => {
-                                        const rows = existing
-                                            ? additionalVideos
-                                            : videoRows;
-                                        const setRows = existing
-                                            ? setAdditionalVideos
-                                            : setVideoRows;
-
-                                        return (
-                                            <div
-                                                key={`vid-${index}`}
-                                                className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"
-                                            >
-                                                <div className="mb-2 flex justify-end">
-                                                    {rows.length > 1 ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                setRows(
-                                                                    rows.filter(
-                                                                        (
-                                                                            _,
-                                                                            i,
-                                                                        ) =>
-                                                                            i !==
-                                                                            index,
-                                                                    ),
-                                                                )
-                                                            }
-                                                            className="text-sm font-semibold text-red-600 dark:text-red-400"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    ) : null}
-                                                </div>
-                                                <div className="grid gap-3 sm:grid-cols-2">
-                                                    <div className="sm:col-span-2">
-                                                        <label
-                                                            className={
-                                                                adminLabel
-                                                            }
-                                                        >
-                                                            Video URL
-                                                        </label>
-                                                        <input
-                                                            value={row.url}
-                                                            onChange={(e) =>
-                                                                setRows(
-                                                                    rs =>
-                                                                        rs.map(
-                                                                            (
-                                                                                r,
-                                                                                i,
-                                                                            ) =>
-                                                                                i ===
-                                                                                index
-                                                                                    ? {
-                                                                                          ...r,
-                                                                                          url: e
-                                                                                              .target
-                                                                                              .value,
-                                                                                      }
-                                                                                    : r,
-                                                                        ),
-                                                                )
-                                                            }
-                                                            className={
-                                                                adminInput
-                                                            }
-                                                            placeholder="https://…"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label
-                                                            className={
-                                                                adminLabel
-                                                            }
-                                                        >
-                                                            Provider
-                                                        </label>
-                                                        <select
-                                                            value={
-                                                                row.provider
-                                                            }
-                                                            onChange={(e) =>
-                                                                setRows(
-                                                                    rs =>
-                                                                        rs.map(
-                                                                            (
-                                                                                r,
-                                                                                i,
-                                                                            ) =>
-                                                                                i ===
-                                                                                index
-                                                                                    ? {
-                                                                                          ...r,
-                                                                                          provider:
-                                                                                              e
-                                                                                                  .target
-                                                                                                  .value,
-                                                                                      }
-                                                                                    : r,
-                                                                        ),
-                                                                )
-                                                            }
-                                                            className={
-                                                                adminInput
-                                                            }
-                                                        >
-                                                            <option value="">
-                                                                — Auto / none —
-                                                            </option>
-                                                            <option value="youtube">
-                                                                YouTube
-                                                            </option>
-                                                            <option value="vimeo">
-                                                                Vimeo
-                                                            </option>
-                                                            <option value="other">
-                                                                Other
-                                                            </option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    },
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    existing
-                                        ? setAdditionalVideos((r) => [
-                                              ...r,
-                                              { url: '', provider: '' },
-                                          ])
-                                        : setVideoRows((r) => [
-                                              ...r,
-                                              { url: '', provider: '' },
-                                          ])
-                                }
-                                className={`mt-4 ${adminCancelBtn}`}
-                            >
-                                + Add video row
                             </button>
                         </div>
 

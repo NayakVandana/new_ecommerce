@@ -11,6 +11,33 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+/**
+ * Fallback when `public/storage` → `storage/app/public` is missing (e.g. symlink
+ * not created). Normally Apache / `php artisan serve` serves these as static files.
+ */
+Route::get('/storage/{path}', function (string $path) {
+    $path = str_replace('\\', '/', $path);
+    if (str_contains($path, '..')) {
+        abort(404);
+    }
+    $fullPath = storage_path('app/public/'.$path);
+    if (! is_file($fullPath)) {
+        abort(404);
+    }
+    $base = realpath(storage_path('app/public'));
+    $real = realpath($fullPath);
+    if ($base === false || $real === false) {
+        abort(404);
+    }
+    $baseNorm = str_replace('\\', '/', $base);
+    $realNorm = str_replace('\\', '/', $real);
+    if ($realNorm !== $baseNorm && ! str_starts_with($realNorm, $baseNorm.'/')) {
+        abort(404);
+    }
+
+    return response()->file($real);
+})->where('path', '.*');
+
 Route::get('/', fn () => Inertia::render('Guest/Home'))->name('home');
 
 Route::get('/catalog', fn () => Inertia::render('Guest/Catalog'))->name('guest.catalog');
@@ -82,9 +109,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 'product' => $product->load([
                     'brand',
                     'subcategory.category',
-                    'variants' => fn ($q) => $q->orderByDesc('is_default')->orderBy('id'),
-                    'images' => fn ($q) => $q->orderBy('sort_order')->orderBy('id'),
-                    'videos' => fn ($q) => $q->orderBy('sort_order')->orderBy('id'),
+                    'variants' => fn ($q) => $q->orderByDesc('is_default')->orderBy('id')->with([
+                        'images' => fn ($iq) => $iq->orderBy('sort_order')->orderBy('id'),
+                        'videos' => fn ($vq) => $vq->orderBy('sort_order')->orderBy('id'),
+                    ]),
+                    'images' => fn ($q) => $q
+                        ->whereNull('product_variant_id')
+                        ->orderBy('sort_order')
+                        ->orderBy('id'),
+                    'videos' => fn ($q) => $q
+                        ->whereNull('product_variant_id')
+                        ->orderBy('sort_order')
+                        ->orderBy('id'),
                 ]),
                 'meta' => [
                     'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),

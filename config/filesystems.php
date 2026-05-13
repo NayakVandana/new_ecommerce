@@ -41,7 +41,12 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            /*
+             * Root-relative URL avoids broken media links when APP_URL uses
+             * http://localhost (port 80) but the app is served on another host/port.
+             * Override with a full URL (e.g. CDN) via FILESYSTEM_PUBLIC_DISK_URL if needed.
+             */
+            'url' => env('FILESYSTEM_PUBLIC_DISK_URL', '/storage'),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

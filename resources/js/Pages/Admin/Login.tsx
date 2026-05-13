@@ -49,10 +49,10 @@ export default function Login() {
 
             setAdminApiToken(body.data.token);
 
-            await axios.get('/sanctum/csrf-cookie');
             await axios.post(route('admin.session.bootstrap'), {
                 token: body.data.token,
             });
+            await axios.get('/sanctum/csrf-cookie');
 
             router.visit(route('admin.dashboard'));
         } catch {

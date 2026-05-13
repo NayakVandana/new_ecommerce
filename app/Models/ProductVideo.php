@@ -9,6 +9,7 @@ class ProductVideo extends Model
 {
     protected $fillable = [
         'product_id',
+        'product_variant_id',
         'url',
         'provider',
         'sort_order',
@@ -24,5 +25,10 @@ class ProductVideo extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

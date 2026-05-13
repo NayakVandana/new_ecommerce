@@ -18,6 +18,7 @@ class ProductVariant extends Model
         'barcode',
         'size',
         'color',
+        'color_hex',
         'price',
         'compare_at_price',
         'cost',
@@ -54,6 +55,11 @@ class ProductVariant extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class);
+    }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(ProductVideo::class);
     }
 
     public function wishlistItems(): HasMany

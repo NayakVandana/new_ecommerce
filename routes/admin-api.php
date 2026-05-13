@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAuthApiController;
+use App\Http\Controllers\Admin\AdminMediaUploadController;
 use App\Http\Controllers\Admin\BrandApiController;
 use App\Http\Controllers\Admin\CategoryApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
@@ -20,6 +21,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/products/store', [ProductApiController::class, 'postProductStore']);
     Route::post('/products/update', [ProductApiController::class, 'postProductUpdate']);
     Route::post('/products/destroy', [ProductApiController::class, 'postProductDestroy']);
+
+    Route::post('/media/upload-product-image', [AdminMediaUploadController::class, 'postUploadProductImage']);
+    Route::post('/media/upload-product-video', [AdminMediaUploadController::class, 'postUploadProductVideo']);
 
     Route::post('/brands/list', [BrandApiController::class, 'postBrandsList']);
     Route::post('/brands/store', [BrandApiController::class, 'postBrandStore']);
