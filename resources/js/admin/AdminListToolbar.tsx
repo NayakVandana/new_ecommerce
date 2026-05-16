@@ -2,8 +2,8 @@ import { adminSearchInput, adminToolbarAddBtn } from '@/admin/adminTheme';
 import { Link } from '@inertiajs/react';
 
 type Props = {
-    addHref: string;
-    addLabel: string;
+    addHref?: string;
+    addLabel?: string;
     searchPlaceholder?: string;
     searchValue: string;
     onSearchChange: (value: string) => void;
@@ -29,12 +29,14 @@ export default function AdminListToolbar({
                     className={adminSearchInput}
                 />
             </div>
-            <Link
-                href={addHref}
-                className={`${adminToolbarAddBtn} w-full md:w-auto md:shrink-0`}
-            >
-                {addLabel}
-            </Link>
+            {addHref && addLabel ? (
+                <Link
+                    href={addHref}
+                    className={`${adminToolbarAddBtn} w-full md:w-auto md:shrink-0`}
+                >
+                    {addLabel}
+                </Link>
+            ) : null}
         </div>
     );
 }

@@ -85,6 +85,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->whereNumber('id')
             ->name('categories.edit');
 
+        Route::get('users', fn () => Inertia::render('Admin/Users/Index'))->name('users.index');
+
         Route::get('products', fn () => Inertia::render('Admin/Products/Index'))->name('products.index');
         Route::get('products/create', fn () => Inertia::render('Admin/Products/Form', ['productId' => null]))
             ->name('products.create');

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CategoryApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
 use App\Http\Controllers\Admin\ProductApiController;
 use App\Http\Controllers\Admin\SubcategoryApiController;
+use App\Http\Controllers\Admin\UserApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/admin')->group(function () {
@@ -42,4 +43,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/subcategories/store', [SubcategoryApiController::class, 'postSubcategoryStore']);
     Route::post('/subcategories/update', [SubcategoryApiController::class, 'postSubcategoryUpdate']);
     Route::post('/subcategories/destroy', [SubcategoryApiController::class, 'postSubcategoryDestroy']);
+
+    Route::post('/users/list', [UserApiController::class, 'postUsersList']);
 });
