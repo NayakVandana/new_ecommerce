@@ -112,7 +112,7 @@ export default function Show() {
             <div className="mx-auto max-w-3xl space-y-4">
                 <Link
                     href={route('user.orders.index')}
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                    className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline dark:text-stone-100"
                 >
                     ← Back to orders
                 </Link>
@@ -125,13 +125,13 @@ export default function Show() {
                         <div className={storeCard}>
                             <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                                         Order
                                     </p>
-                                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                                    <p className="text-lg font-semibold text-stone-900 dark:text-white">
                                         {order.order_number}
                                     </p>
-                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
                                         Placed {formatOrderDate(order.placed_at ?? order.created_at)}
                                     </p>
                                 </div>
@@ -139,41 +139,41 @@ export default function Show() {
                                     {order.status}
                                 </span>
                             </div>
-                            <dl className="mt-6 grid gap-3 border-t border-slate-100 pt-4 text-sm dark:border-slate-800 sm:grid-cols-2">
+                            <dl className="mt-6 grid gap-3 border-t border-stone-100 pt-4 text-sm dark:border-stone-800 sm:grid-cols-2">
                                 <div>
-                                    <dt className="text-slate-500 dark:text-slate-400">Subtotal</dt>
-                                    <dd className="font-medium text-slate-900 dark:text-white">
+                                    <dt className="text-stone-500 dark:text-stone-400">Subtotal</dt>
+                                    <dd className="font-medium text-stone-900 dark:text-white">
                                         {formatMoney(order.subtotal, order.currency)}
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-slate-500 dark:text-slate-400">Shipping</dt>
-                                    <dd className="font-medium text-slate-900 dark:text-white">
+                                    <dt className="text-stone-500 dark:text-stone-400">Shipping</dt>
+                                    <dd className="font-medium text-stone-900 dark:text-white">
                                         {formatMoney(order.shipping_total, order.currency)}
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-slate-500 dark:text-slate-400">Tax</dt>
-                                    <dd className="font-medium text-slate-900 dark:text-white">
+                                    <dt className="text-stone-500 dark:text-stone-400">Tax</dt>
+                                    <dd className="font-medium text-stone-900 dark:text-white">
                                         {formatMoney(order.tax_total, order.currency)}
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-slate-500 dark:text-slate-400">Discount</dt>
-                                    <dd className="font-medium text-slate-900 dark:text-white">
+                                    <dt className="text-stone-500 dark:text-stone-400">Discount</dt>
+                                    <dd className="font-medium text-stone-900 dark:text-white">
                                         {formatMoney(order.discount_total, order.currency)}
                                     </dd>
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <dt className="text-slate-500 dark:text-slate-400">Total</dt>
-                                    <dd className="text-lg font-bold text-slate-900 dark:text-white">
+                                    <dt className="text-stone-500 dark:text-stone-400">Total</dt>
+                                    <dd className="text-lg font-bold text-stone-900 dark:text-white">
                                         {formatMoney(order.grand_total, order.currency)}
                                     </dd>
                                 </div>
                             </dl>
                             {order.customer_note ? (
-                                <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400">
-                                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                                <p className="mt-4 border-t border-stone-100 pt-4 text-sm text-stone-600 dark:border-stone-800 dark:text-stone-400">
+                                    <span className="font-medium text-stone-800 dark:text-stone-200">
                                         Note:{' '}
                                     </span>
                                     {order.customer_note}
@@ -182,7 +182,7 @@ export default function Show() {
                         </div>
 
                         <div className={storeCard}>
-                            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                            <h2 className="text-base font-semibold text-stone-900 dark:text-white">
                                 Items
                             </h2>
                             <div className={`${storeTableWrap} mt-4 border-0 shadow-none`}>
@@ -196,19 +196,19 @@ export default function Show() {
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                                         {items.map((item) => (
                                             <tr key={item.id}>
                                                 <td className={storeTableTd}>
-                                                    <p className="font-medium text-slate-900 dark:text-white">
+                                                    <p className="font-medium text-stone-900 dark:text-white">
                                                         {item.product_name}
                                                     </p>
                                                     {item.variant_label ? (
-                                                        <p className="text-xs text-slate-500">
+                                                        <p className="text-xs text-stone-500">
                                                             {item.variant_label}
                                                         </p>
                                                     ) : null}
-                                                    <p className="text-xs text-slate-400">
+                                                    <p className="text-xs text-stone-400">
                                                         SKU {item.sku}
                                                     </p>
                                                 </td>
@@ -225,23 +225,23 @@ export default function Show() {
 
                         {histories.length > 0 ? (
                             <div className={storeCard}>
-                                <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                                <h2 className="text-base font-semibold text-stone-900 dark:text-white">
                                     Status history
                                 </h2>
                                 <ul className="mt-4 space-y-3">
                                     {histories.map((h) => (
                                         <li
                                             key={h.id}
-                                            className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 last:border-0 dark:border-slate-800"
+                                            className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3 last:border-0 dark:border-stone-800"
                                         >
                                             <span className={orderStatusBadgeClass(h.status)}>
                                                 {h.status}
                                             </span>
-                                            <span className="text-xs text-slate-500">
+                                            <span className="text-xs text-stone-500">
                                                 {formatOrderDate(h.created_at)}
                                             </span>
                                             {h.note ? (
-                                                <p className="w-full text-sm text-slate-600 dark:text-slate-400">
+                                                <p className="w-full text-sm text-stone-600 dark:text-stone-400">
                                                     {h.note}
                                                 </p>
                                             ) : null}

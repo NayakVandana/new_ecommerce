@@ -9,6 +9,8 @@ import {
     storeBtnPrimary,
     storeBtnSecondary,
     storeCard,
+    storeCartLine,
+    storeCartLineBody,
     storeErrorBanner,
     storeInput,
     storeMutedText,
@@ -111,7 +113,7 @@ export default function Cart() {
 
     return (
         <GuestPanelLayout title="Shopping bag">
-            <Head title="ÉLAN · Bag" />
+            <Head title="Suhaag · Bag" />
 
             {error ? <div className={`mb-6 ${storeErrorBanner}`}>{error}</div> : null}
 
@@ -136,11 +138,12 @@ export default function Cart() {
                             const src = cartImageSrc(item.image_path);
 
                             return (
-                                <li key={item.id} className={`${storeCard} flex gap-4`}>
-                                    <Link
-                                        href={route('guest.catalog')}
-                                        className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
-                                    >
+                                <li key={item.id} className={storeCartLine}>
+                                    <div className={storeCartLineBody}>
+                                        <Link
+                                            href={route('guest.catalog')}
+                                            className="h-20 w-20 shrink-0 overflow-hidden bg-stone-200 sm:h-24 sm:w-24 dark:bg-stone-800"
+                                        >
                                         {src ? (
                                             <img
                                                 src={src}
@@ -153,43 +156,44 @@ export default function Cart() {
                                             </div>
                                         )}
                                     </Link>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-semibold text-slate-900 dark:text-white">
-                                            {item.product_name}
-                                        </p>
-                                        <p className="text-xs text-slate-500">{item.variant_label}</p>
-                                        <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-                                            {formatMoney(item.unit_price, cart?.currency ?? 'INR')}
-                                        </p>
-                                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                                            <label className="flex items-center gap-2 text-sm">
-                                                <span className="text-slate-500">Qty</span>
-                                                <input
-                                                    type="number"
-                                                    min={1}
-                                                    max={item.stock_quantity}
-                                                    value={item.quantity}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-medium text-stone-900 dark:text-stone-50">
+                                                {item.product_name}
+                                            </p>
+                                            <p className="text-xs text-stone-500">{item.variant_label}</p>
+                                            <p className="mt-1 text-sm font-medium text-stone-800 dark:text-stone-200">
+                                                {formatMoney(item.unit_price, cart?.currency ?? 'INR')}
+                                            </p>
+                                            <div className="mt-3 flex flex-wrap items-center gap-3">
+                                                <label className="flex items-center gap-2 text-sm">
+                                                    <span className="text-stone-500">Qty</span>
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        max={item.stock_quantity}
+                                                        value={item.quantity}
+                                                        disabled={busyId === item.id}
+                                                        onChange={(e) =>
+                                                            void updateQty(
+                                                                item,
+                                                                Number(e.target.value),
+                                                            )
+                                                        }
+                                                        className={`${storeInput} w-20 py-1`}
+                                                    />
+                                                </label>
+                                                <button
+                                                    type="button"
                                                     disabled={busyId === item.id}
-                                                    onChange={(e) =>
-                                                        void updateQty(
-                                                            item,
-                                                            Number(e.target.value),
-                                                        )
-                                                    }
-                                                    className={`${storeInput} w-20 py-1`}
-                                                />
-                                            </label>
-                                            <button
-                                                type="button"
-                                                disabled={busyId === item.id}
-                                                onClick={() => void removeItem(item)}
-                                                className="text-sm font-medium text-red-600 dark:text-red-400"
-                                            >
-                                                Remove
-                                            </button>
+                                                    onClick={() => void removeItem(item)}
+                                                    className="min-h-10 text-sm font-medium text-red-600 dark:text-red-400"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <p className="shrink-0 text-sm font-semibold text-slate-900 dark:text-white">
+                                    <p className="text-sm font-semibold text-stone-900 sm:text-right dark:text-stone-50">
                                         {formatMoney(item.line_total, cart?.currency ?? 'INR')}
                                     </p>
                                 </li>

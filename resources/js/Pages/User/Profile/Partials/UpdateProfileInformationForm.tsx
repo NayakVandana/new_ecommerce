@@ -124,7 +124,7 @@ export default function UpdateProfileInformation({
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-200 dark:focus:ring-offset-slate-900"
+                                className="text-sm font-medium text-stone-700 underline underline-offset-4 hover:text-stone-900 dark:text-stone-300 dark:hover:text-stone-100"
                             >
                                 Click here to re-send the verification email.
                             </Link>

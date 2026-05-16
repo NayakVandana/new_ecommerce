@@ -105,26 +105,4 @@ class ProfileController extends Controller
             return $this->sendError($e);
         }
     }
-
-    public function postDestroy(Request $request)
-    {
-        try {
-            $validation = Validator::make($request->all(), [
-                'password' => ['required', 'current_password'],
-            ]);
-
-            if ($validation->fails()) {
-                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
-            }
-
-            $user = $request->user();
-
-            $user->tokens()->delete();
-            $user->delete();
-
-            return $this->sendJsonResponse(true, 'Account deleted successfully.', null, 200);
-        } catch (Exception $e) {
-            return $this->sendError($e);
-        }
-    }
 }

@@ -1,13 +1,19 @@
 import UserPanelLayout from '@/Layouts/User/UserPanelLayout';
+import {
+    storePanel,
+    storePanelBody,
+    storeTabBtnActive,
+    storeTabBtnInactive,
+    storeTabList,
+} from '@/store/storeTheme';
 import { PageProps } from '@/types';
 import { Head } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
-import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdateAppearanceSettingsForm from './Partials/UpdateAppearanceSettingsForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
-const TAB_IDS = ['profile', 'appearance', 'password', 'delete'] as const;
+const TAB_IDS = ['profile', 'appearance', 'password'] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 function tabFromHash(): TabId {
@@ -48,27 +54,15 @@ export default function Edit({
         { id: 'profile', label: 'Profile' },
         { id: 'appearance', label: 'Appearance' },
         { id: 'password', label: 'Password' },
-        { id: 'delete', label: 'Delete account' },
     ];
-
-    const tabBtnClass = (active: boolean) =>
-        `shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
-            active
-                ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-300'
-                : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-100'
-        }`;
 
     return (
         <UserPanelLayout title="Profile & security">
             <Head title="Profile" />
 
-            <div className="mx-auto max-w-3xl">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div
-                        className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/90 dark:border-slate-700 dark:bg-slate-800/40"
-                        role="tablist"
-                        aria-label="Profile sections"
-                    >
+            <div className="mx-auto w-full max-w-3xl">
+                <div className={storePanel}>
+                    <div className={storeTabList} role="tablist" aria-label="Profile sections">
                         {tabs.map((item) => (
                             <button
                                 key={item.id}
@@ -78,7 +72,9 @@ export default function Edit({
                                 aria-selected={tab === item.id}
                                 aria-controls={`panel-${item.id}`}
                                 tabIndex={tab === item.id ? 0 : -1}
-                                className={tabBtnClass(tab === item.id)}
+                                className={
+                                    tab === item.id ? storeTabBtnActive : storeTabBtnInactive
+                                }
                                 onClick={() => selectTab(item.id)}
                             >
                                 {item.label}
@@ -86,7 +82,7 @@ export default function Edit({
                         ))}
                     </div>
 
-                    <div className="p-6">
+                    <div className={storePanelBody}>
                         <div
                             id="panel-profile"
                             role="tabpanel"
@@ -116,15 +112,6 @@ export default function Edit({
                             hidden={tab !== 'password'}
                         >
                             <UpdatePasswordForm className="max-w-xl" />
-                        </div>
-
-                        <div
-                            id="panel-delete"
-                            role="tabpanel"
-                            aria-labelledby="tab-delete"
-                            hidden={tab !== 'delete'}
-                        >
-                            <DeleteUserForm className="max-w-xl" />
                         </div>
                     </div>
                 </div>

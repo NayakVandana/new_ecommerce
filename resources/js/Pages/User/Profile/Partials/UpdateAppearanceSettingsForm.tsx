@@ -113,28 +113,28 @@ export default function UpdateAppearanceSettingsForm({
                             type="button"
                             disabled={processing}
                             onClick={() => void select(opt.value)}
-                            className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                            className={`flex w-full min-h-11 items-start gap-3 border px-4 py-3 text-left transition ${
                                 selected
-                                    ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:border-indigo-400 dark:bg-indigo-950/40 dark:ring-indigo-400'
-                                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:hover:border-slate-500'
+                                    ? 'border-stone-900 bg-stone-50 ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-900/80 dark:ring-stone-100'
+                                    : 'border-stone-200 bg-white hover:border-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-stone-500'
                             } disabled:opacity-60`}
                         >
                             <span
                                 className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
                                     selected
-                                        ? 'border-indigo-600 bg-indigo-600 dark:border-indigo-400 dark:bg-indigo-400'
-                                        : 'border-gray-300 dark:border-slate-500'
+                                        ? 'border-stone-900 bg-stone-900 dark:border-stone-100 dark:bg-stone-100'
+                                        : 'border-stone-300 dark:border-stone-600'
                                 }`}
                             >
                                 {selected ? (
-                                    <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-slate-900" />
+                                    <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-stone-900" />
                                 ) : null}
                             </span>
                             <span className="min-w-0">
-                                <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                <span className="block text-sm font-semibold text-stone-900 dark:text-stone-100">
                                     {opt.label}
                                 </span>
-                                <span className="mt-0.5 block text-xs text-gray-600 dark:text-gray-400">
+                                <span className="mt-0.5 block text-xs text-stone-600 dark:text-stone-400">
                                     {opt.description}
                                 </span>
                             </span>

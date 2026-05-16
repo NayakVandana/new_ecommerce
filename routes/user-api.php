@@ -11,7 +11,6 @@ Route::middleware(['auth:sanctum'])->prefix('v1/user')->group(function () {
     Route::post('/profile/show', [ProfileController::class, 'postShow']);
     Route::post('/profile/update', [ProfileController::class, 'postUpdate']);
     Route::post('/profile/appearance', [ProfileController::class, 'postAppearanceUpdate']);
-    Route::post('/profile/destroy', [ProfileController::class, 'postDestroy']);
 
     Route::post('/orders/list', [OrderController::class, 'postOrdersList']);
     Route::post('/orders/show', [OrderController::class, 'postOrderShow']);

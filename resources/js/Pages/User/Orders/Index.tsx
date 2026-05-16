@@ -111,7 +111,7 @@ export default function Index() {
                                 <th className={`${storeTableTh} text-right`}> </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                             {loading ? (
                                 <tr>
                                     <td colSpan={5} className={`${storeTableTd} text-center`}>
@@ -126,7 +126,7 @@ export default function Index() {
                                             <p className={storeTableTdStrong}>
                                                 {row.order_number}
                                             </p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            <p className="text-xs text-stone-500 dark:text-stone-400">
                                                 {row.items_count} item
                                                 {row.items_count === 1 ? '' : 's'}
                                             </p>
@@ -145,7 +145,7 @@ export default function Index() {
                                         <td className={`${storeTableTd} text-right`}>
                                             <Link
                                                 href={route('user.orders.show', row.id)}
-                                                className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                                                className="text-sm font-semibold text-stone-900 underline-offset-4 hover:underline dark:text-stone-100"
                                             >
                                                 View
                                             </Link>
@@ -160,7 +160,7 @@ export default function Index() {
                                             <p className={storeMutedText}>No orders yet.</p>
                                             <Link
                                                 href={route('guest.catalog')}
-                                                className="mt-2 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400"
+                                                className="mt-2 inline-block text-sm font-semibold text-stone-900 underline-offset-4 hover:underline dark:text-stone-100"
                                             >
                                                 Browse products →
                                             </Link>

@@ -13,6 +13,9 @@ import {
     storeBtnSecondary,
     storeCard,
     storeErrorBanner,
+    storeHeroBtn,
+    storeInput,
+    storeLabel,
     storeMutedText,
 } from '@/store/storeTheme';
 import GuestPanelLayout from '@/Layouts/Guest/GuestPanelLayout';
@@ -93,10 +96,13 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
 
     return (
         <GuestPanelLayout title={product?.name ?? 'Product'}>
-            <Head title={product ? `ÉLAN · ${product.name}` : 'ÉLAN · Product'} />
+            <Head title={product ? `Suhaag · ${product.name}` : 'Suhaag · Product'} />
 
-            <p className="mb-6 text-sm">
-                <Link href={route('guest.catalog')} className="text-indigo-600 dark:text-indigo-400">
+            <p className="mb-4 text-sm sm:mb-6">
+                <Link
+                    href={route('guest.catalog')}
+                    className="font-medium text-stone-700 underline-offset-4 hover:underline dark:text-stone-300"
+                >
                     ← Back to browse
                 </Link>
             </p>
@@ -105,9 +111,9 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
             {loading ? <p className={storeMutedText}>Loading product…</p> : null}
 
             {!loading && product ? (
-                <div className="grid gap-10 lg:grid-cols-2">
+                <div className="grid gap-6 sm:gap-10 lg:grid-cols-2">
                     <div className="space-y-3">
-                        <div className="aspect-square overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
+                        <div className="aspect-[3/4] overflow-hidden bg-stone-200 sm:aspect-square dark:bg-stone-800">
                             {heroImage ? (
                                 <img
                                     src={heroImage}
@@ -140,7 +146,7 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
                                 {product.brand.name}
                             </p>
                         ) : null}
-                        <h1 className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">
+                        <h1 className="mt-1 font-display text-2xl font-medium text-stone-900 dark:text-stone-50 sm:text-3xl lg:text-4xl">
                             {product.name}
                         </h1>
                         {product.subcategory?.category ? (
@@ -160,13 +166,11 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
 
                         {variants.length > 0 ? (
                             <label className="mt-6 block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Variant
-                                </span>
+                                <span className={storeLabel}>Variant</span>
                                 <select
                                     value={variantId}
                                     onChange={(e) => setVariantId(Number(e.target.value))}
-                                    className="mt-2 w-full max-w-md rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800"
+                                    className={`${storeInput} mt-2 max-w-md`}
                                 >
                                     {variants.map((v) => (
                                         <option key={v.id} value={v.id}>
@@ -184,12 +188,12 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
                             </p>
                         ) : null}
 
-                        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                             <button
                                 type="button"
                                 disabled={outOfStock || adding}
                                 onClick={() => void addToCart(false)}
-                                className={`${storeBtnPrimary} disabled:opacity-50`}
+                                className={`${storeBtnPrimary} ${storeHeroBtn} disabled:opacity-50`}
                             >
                                 {adding ? 'Adding…' : outOfStock ? 'Out of stock' : 'Add to cart'}
                             </button>
@@ -197,7 +201,7 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
                                 type="button"
                                 disabled={outOfStock || adding}
                                 onClick={() => void addToCart(true)}
-                                className={`${storeBtnSecondary} disabled:opacity-50`}
+                                className={`${storeBtnSecondary} ${storeHeroBtn} disabled:opacity-50`}
                             >
                                 Buy now
                             </button>

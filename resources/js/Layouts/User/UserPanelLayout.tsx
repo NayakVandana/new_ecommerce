@@ -1,15 +1,26 @@
+import CartBadge from '@/Components/CartBadge';
+import AccountHeaderButton from '@/Components/store/AccountHeaderButton';
 import FashionLogo from '@/Components/store/FashionLogo';
-import StoreThemeToggle from '@/Components/StoreThemeToggle';
+import StoreFixedHeader from '@/Components/store/StoreFixedHeader';
 import AppearanceSync from '@/Components/AppearanceSync';
 import { catalogUrl } from '@/store/fashionBrand';
 import {
     storeBtnGhost,
-    storeMain,
+    storeMobileNavLink,
+    storeUserMain,
+    storeUserMobileHeader,
+    storeUserMobileHeaderRow,
+    storeUserMobileMenu,
+    storeUserMobileTabActive,
+    storeUserMobileTabInactive,
+    storeUserMobileTabs,
     storeUserNavActive,
     storeUserNavInactive,
+    storeUserPageTitle,
     storeUserShell,
     storeUserSidebar,
     storeUserTopBar,
+    storeUserTopBarInner,
 } from '@/store/storeTheme';
 import { useAuthUser } from '@/auth/useAuthUser';
 import { redirectToLogin } from '@/utils/requireAuth';
@@ -41,6 +52,18 @@ export default function UserPanelLayout({
         }
     }, [loading, user]);
 
+    useEffect(() => {
+        if (menuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [menuOpen]);
+
     if (loading || !user) {
         return null;
     }
@@ -48,46 +71,32 @@ export default function UserPanelLayout({
     const navClass = (active: boolean) =>
         active ? storeUserNavActive : storeUserNavInactive;
 
-    const sidebar = (
+    const desktopSidebar = (
         <>
             <div className="border-b border-stone-100 px-5 py-6 dark:border-stone-800">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-stone-500">
                     Signed in
                 </p>
-                <p className="mt-2 font-display text-xl text-stone-900 dark:text-stone-50">
+                <p className="mt-2 truncate font-display text-xl text-stone-900 dark:text-stone-50">
                     {user.name}
                 </p>
                 <p className="truncate text-xs text-stone-500">{user.email}</p>
             </div>
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
                 {sidebarLinks.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMenuOpen(false)}
-                        className={navClass(isActive(item.routeMatch))}
-                    >
+                    <Link key={item.href} href={item.href} className={navClass(isActive(item.routeMatch))}>
                         {item.label}
                     </Link>
                 ))}
-                <Link
-                    href={route('guest.catalog')}
-                    onClick={() => setMenuOpen(false)}
-                    className={`${storeUserNavInactive} mt-4`}
-                >
+                <Link href={route('guest.catalog')} className={`${storeUserNavInactive} mt-4`}>
                     Continue shopping
                 </Link>
-                <Link
-                    href={catalogUrl({ featured_only: true })}
-                    onClick={() => setMenuOpen(false)}
-                    className={storeUserNavInactive}
-                >
+                <Link href={catalogUrl({ featured_only: true })} className={storeUserNavInactive}>
                     New arrivals
                 </Link>
                 {'is_admin' in user && user.is_admin ? (
                     <Link
                         href={route('admin.dashboard')}
-                        onClick={() => setMenuOpen(false)}
                         className="mt-2 py-3 pl-4 text-[11px] font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-200"
                     >
                         Admin
@@ -98,7 +107,7 @@ export default function UserPanelLayout({
                 <button
                     type="button"
                     onClick={() => void logout().then(() => router.visit(route('home')))}
-                    className="w-full py-3 pl-4 text-left text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-400"
+                    className="w-full min-h-11 py-3 pl-4 text-left text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-400"
                 >
                     Sign out
                 </button>
@@ -106,74 +115,116 @@ export default function UserPanelLayout({
         </>
     );
 
+    const mobileMenuExtras = (
+        <nav className={`${storeUserMobileMenu} px-3 py-3`}>
+            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-stone-500">
+                More
+            </p>
+            <Link
+                href={route('guest.catalog')}
+                onClick={() => setMenuOpen(false)}
+                className={`${storeMobileNavLink} ${storeUserNavInactive}`}
+            >
+                Continue shopping
+            </Link>
+            <Link
+                href={catalogUrl({ featured_only: true })}
+                onClick={() => setMenuOpen(false)}
+                className={`${storeMobileNavLink} ${storeUserNavInactive}`}
+            >
+                New arrivals
+            </Link>
+            {'is_admin' in user && user.is_admin ? (
+                <Link
+                    href={route('admin.dashboard')}
+                    onClick={() => setMenuOpen(false)}
+                    className={`${storeMobileNavLink} text-amber-800 dark:text-amber-200`}
+                >
+                    Admin
+                </Link>
+            ) : null}
+            <button
+                type="button"
+                onClick={() => {
+                    setMenuOpen(false);
+                    void logout().then(() => router.visit(route('home')));
+                }}
+                className={`${storeMobileNavLink} w-full text-left text-red-700 dark:text-red-400`}
+            >
+                Sign out
+            </button>
+        </nav>
+    );
+
     return (
-        <div className={storeUserShell}>
+        <div className={`${storeUserShell} min-h-screen`}>
             <AppearanceSync />
-            <div className={`${storeUserTopBar} hidden lg:block`}>
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-                    <FashionLogo subline="My account" />
-                    <div className="flex items-center gap-6">
-                        <Link href={route('guest.catalog')} className={storeBtnGhost}>
-                            Shop fashion
-                        </Link>
-                        <Link href={route('guest.cart')} className={storeBtnGhost}>
-                            Bag
-                        </Link>
-                        <StoreThemeToggle />
+
+            <StoreFixedHeader>
+                <header className={`${storeUserTopBar} hidden lg:block`}>
+                    <div className={storeUserTopBarInner}>
+                        <FashionLogo subline="My account" />
+                        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+                            <Link href={route('guest.catalog')} className={storeBtnGhost}>
+                                Shop
+                            </Link>
+                            <CartBadge />
+                            <AccountHeaderButton name={user.name} />
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div className="flex min-h-screen">
-                <aside className={storeUserSidebar}>{sidebar}</aside>
+                </header>
+
+                <header className={`${storeUserMobileHeader} lg:hidden`}>
+                    <div className={storeUserMobileHeaderRow}>
+                        <button
+                            type="button"
+                            className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg text-stone-600 hover:bg-stone-200/80 dark:hover:bg-stone-800"
+                            aria-expanded={menuOpen}
+                            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                            onClick={() => setMenuOpen((o) => !o)}
+                        >
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                {menuOpen ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                )}
+                            </svg>
+                        </button>
+                        <span className="min-w-0 flex-1 truncate text-center font-display text-base text-stone-900 sm:text-lg dark:text-stone-50">
+                            {title ?? 'Account'}
+                        </span>
+                        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                            <CartBadge />
+                            <AccountHeaderButton name={user.name} />
+                        </div>
+                    </div>
+                    <nav className={storeUserMobileTabs} aria-label="Account sections">
+                        {sidebarLinks.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setMenuOpen(false)}
+                                className={
+                                    isActive(item.routeMatch)
+                                        ? storeUserMobileTabActive
+                                        : storeUserMobileTabInactive
+                                }
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                    </nav>
+                    {menuOpen ? mobileMenuExtras : null}
+                </header>
+            </StoreFixedHeader>
+
+            <div className="flex w-full min-h-0 flex-1 flex-col lg:flex-row">
+                <aside className={storeUserSidebar}>{desktopSidebar}</aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur-md dark:border-stone-800 dark:bg-stone-950/95 lg:hidden">
-                        <div className="flex items-center justify-between gap-2 px-4 py-3">
-                            <button
-                                type="button"
-                                className="p-2 text-stone-600"
-                                aria-expanded={menuOpen}
-                                aria-label="Account menu"
-                                onClick={() => setMenuOpen((o) => !o)}
-                            >
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                                </svg>
-                            </button>
-                            <span className="font-display text-lg text-stone-900 dark:text-stone-50">
-                                {title ?? 'Account'}
-                            </span>
-                            <StoreThemeToggle />
-                        </div>
-                        {menuOpen ? (
-                            <div className="max-h-[70vh] overflow-y-auto border-t border-stone-200 dark:border-stone-800">
-                                {sidebar}
-                            </div>
-                        ) : null}
-                        <nav className="flex gap-2 overflow-x-auto border-t border-stone-100 px-3 py-2 dark:border-stone-800">
-                            {sidebarLinks.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`shrink-0 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider ${
-                                        isActive(item.routeMatch)
-                                            ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                                            : 'text-stone-600'
-                                    }`}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
-                    </header>
-
-                    <header className="hidden border-b border-stone-200 px-8 py-6 dark:border-stone-800 lg:block">
-                        <h1 className="font-display text-3xl text-stone-900 dark:text-stone-50">
-                            {title ?? 'Account'}
-                        </h1>
-                    </header>
-
-                    <main className={`flex-1 ${storeMain} !max-w-none lg:py-10`}>{children}</main>
+                    <h1 className={`${storeUserPageTitle} px-3 sm:px-6 lg:px-8`}>{title ?? 'Account'}</h1>
+                    <main className={storeUserMain}>{children}</main>
                 </div>
             </div>
         </div>

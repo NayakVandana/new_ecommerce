@@ -1,6 +1,7 @@
+import { BagIcon } from '@/Components/store/StoreHeaderIcons';
 import { cartStore } from '@/api/cartClient';
 import { useAuthUser } from '@/auth/useAuthUser';
-import { storeNavActive, storeNavInactive } from '@/store/storeTheme';
+import { storeHeaderCartBadge, storeHeaderIconBtn } from '@/store/storeTheme';
 import { loginUrl } from '@/utils/requireAuth';
 import { Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -36,11 +37,16 @@ export default function CartBadge() {
     return (
         <Link
             href={href}
-            className={`relative ${isActive ? storeNavActive : storeNavInactive}`}
+            className={`${storeHeaderIconBtn} ${isActive ? 'text-stone-900 dark:text-stone-50' : ''}`}
+            aria-label={
+                user && count > 0
+                    ? `Shopping bag, ${count} item${count === 1 ? '' : 's'}`
+                    : 'Shopping bag'
+            }
         >
-            Bag
+            <BagIcon className="h-[22px] w-[22px] sm:h-6 sm:w-6" />
             {user && count > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center bg-stone-900 px-1 text-[9px] font-bold text-white dark:bg-stone-100 dark:text-stone-900">
+                <span className={storeHeaderCartBadge}>
                     {count > 99 ? '99+' : count}
                 </span>
             ) : null}

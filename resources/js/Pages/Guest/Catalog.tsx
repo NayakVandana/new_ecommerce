@@ -14,6 +14,7 @@ import {
     storeLabel,
     storeSectionEyebrow,
     storeSectionTitle,
+    storeFilterToggle,
     storeSidebar,
 } from '@/store/storeTheme';
 import GuestPanelLayout from '@/Layouts/Guest/GuestPanelLayout';
@@ -57,6 +58,7 @@ export default function Catalog() {
     const [payload, setPayload] = useState<Paginator | null>(null);
     const [brands, setBrands] = useState<CatalogBrand[]>([]);
     const [categories, setCategories] = useState<CatalogCategory[]>([]);
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     const loadProducts = useCallback(
         async (p: number) => {
@@ -131,7 +133,27 @@ export default function Catalog() {
             <Head title="Suhaag · Shop" />
 
             <div className="flex flex-col gap-8 lg:flex-row">
-                <aside className={`${storeSidebar} w-full lg:w-64`}>
+                <button
+                    type="button"
+                    className={storeFilterToggle}
+                    aria-expanded={filtersOpen}
+                    onClick={() => setFiltersOpen((o) => !o)}
+                >
+                    {filtersOpen ? 'Hide filters' : 'Show filters'}
+                    <svg
+                        className={`h-4 w-4 transition ${filtersOpen ? 'rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <aside
+                    className={`${storeSidebar} w-full lg:w-64 ${
+                        filtersOpen ? 'block' : 'hidden lg:block'
+                    }`}
+                >
                     <p className={storeSectionEyebrow}>Refine</p>
                     <h2 className="mt-1 font-display text-xl text-stone-900 dark:text-stone-50">
                         Filters

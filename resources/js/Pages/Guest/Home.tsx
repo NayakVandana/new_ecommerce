@@ -10,6 +10,8 @@ import {
     storeCategoryTile,
     storeHero,
     storeHeroLead,
+    storeHeroActions,
+    storeHeroBtn,
     storeHeroTitle,
     storeMutedText,
     storeProductGrid,
@@ -64,20 +66,26 @@ export default function Home() {
                         Shop women&apos;s ethnic wear only — Banarasi silks, kurta sets, salwar
                         suits, and everyday tunics. Live stock from our catalog API.
                     </p>
-                    <div className="mt-10 flex flex-wrap gap-4">
+                    <div className={storeHeroActions}>
                         {shopCategories[0] ? (
                             <Link
                                 href={catalogUrlForCategory(shopCategories[0].id)}
-                                className={storeBtnPrimary}
+                                className={`${storeBtnPrimary} ${storeHeroBtn}`}
                             >
                                 Shop sarees
                             </Link>
                         ) : (
-                            <Link href={route('guest.catalog')} className={storeBtnPrimary}>
+                            <Link
+                                href={route('guest.catalog')}
+                                className={`${storeBtnPrimary} ${storeHeroBtn}`}
+                            >
                                 Shop collection
                             </Link>
                         )}
-                        <Link href={catalogUrl({ featured_only: true })} className={storeBtnSecondary}>
+                        <Link
+                            href={catalogUrl({ featured_only: true })}
+                            className={`${storeBtnSecondary} ${storeHeroBtn}`}
+                        >
                             New arrivals
                         </Link>
                     </div>
@@ -85,7 +93,7 @@ export default function Home() {
             </section>
 
             {shopCategories.length > 0 ? (
-                <section className="mt-14 grid gap-4 sm:grid-cols-3">
+                <section className="mt-10 grid grid-cols-1 gap-3 sm:mt-14 sm:grid-cols-3 sm:gap-4">
                     {shopCategories.map((cat) => (
                         <Link
                             key={cat.id}
@@ -103,7 +111,7 @@ export default function Home() {
             ) : null}
 
             <section className="mt-16">
-                <div className="flex items-end justify-between gap-4 border-b border-stone-200 pb-4 dark:border-stone-800">
+                <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 sm:flex-row sm:items-end sm:justify-between dark:border-stone-800">
                     <div>
                         <p className={storeSectionEyebrow}>Editor&apos;s pick</p>
                         <h2 className={`${storeSectionTitle} mt-1`}>New & featured</h2>
@@ -148,7 +156,7 @@ export default function Home() {
                 </section>
             ) : null}
 
-            <section className="mt-16 grid gap-6 border border-stone-200 bg-stone-100 p-8 dark:border-stone-800 dark:bg-stone-900/50 sm:grid-cols-3">
+            <section className="mt-12 grid grid-cols-1 gap-6 border border-stone-200 bg-stone-100 p-5 dark:border-stone-800 dark:bg-stone-900/50 sm:mt-16 sm:grid-cols-3 sm:p-8">
                 {[
                     {
                         title: 'Pure ethnic',

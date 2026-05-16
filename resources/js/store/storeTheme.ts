@@ -1,19 +1,49 @@
 /** Fashion storefront & account — editorial stone / cream palette. */
 
+const scrollX =
+    'overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+const ptSafe = 'pt-[max(0px,env(safe-area-inset-top))]';
+
+const pbSafe = 'pb-[max(1rem,env(safe-area-inset-bottom))]';
+
 export const storeShell =
     'min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100';
 
 export const storeAnnounceBar =
-    'bg-stone-900 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-stone-100';
+    'bg-stone-900 text-center text-[10px] font-medium uppercase tracking-[0.15em] text-stone-100 sm:text-[11px] sm:tracking-[0.2em]';
 
 export const storeHeader =
-    'sticky top-0 z-40 border-b border-stone-200/90 bg-stone-50/95 backdrop-blur-md dark:border-stone-800 dark:bg-stone-950/95';
+    `border-b border-stone-200/90 bg-stone-50/95 backdrop-blur-md ${ptSafe} dark:border-stone-800 dark:bg-stone-950/95`;
+
+export const storeHeaderBar = storeHeader;
 
 export const storeHeaderInner =
-    'mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6';
+    'mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-3 sm:gap-x-3 sm:px-6 sm:py-4';
+
+export const storeHeaderActions =
+    'flex items-center justify-end gap-2 sm:gap-3';
+
+export const storeHeaderIconBtn =
+    'relative flex min-h-10 min-w-10 items-center justify-center text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100';
+
+export const storeHeaderCartBadge =
+    'absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center bg-stone-900 px-0.5 text-[9px] font-bold leading-none text-white dark:bg-stone-100 dark:text-stone-900';
+
+export const storeHeaderAccount =
+    'inline-flex min-h-10 max-w-[7rem] items-center gap-1.5 bg-stone-900 px-2.5 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-stone-800 sm:max-w-[10rem] sm:gap-2 sm:px-4 sm:text-[11px] sm:tracking-[0.15em] dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200';
+
+export const storeMobileCategoryStrip =
+    'border-b border-stone-200 bg-stone-50/95 dark:border-stone-800 dark:bg-stone-950/95 lg:hidden';
+
+export const storeMobileCategoryScroll =
+    `${scrollX} flex gap-2 px-3 py-2.5 sm:px-4`;
+
+export const storeMobileNavLink =
+    'flex min-h-11 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-[0.18em]';
 
 export const storeBrand =
-    'font-display text-2xl font-medium tracking-[0.12em] text-stone-900 dark:text-stone-50 sm:text-3xl';
+    'font-display text-xl font-medium tracking-[0.1em] text-stone-900 dark:text-stone-50 sm:text-2xl sm:tracking-[0.12em] lg:text-3xl';
 
 export const storeBrandSub =
     'text-[10px] font-medium uppercase tracking-[0.25em] text-stone-500 dark:text-stone-400';
@@ -33,15 +63,16 @@ export const storePageTitleBar =
 export const storePageTitleInner = 'mx-auto max-w-7xl px-4 py-6 sm:px-6';
 
 export const storePageTitle =
-    'font-display text-2xl font-medium tracking-wide text-stone-900 dark:text-stone-50';
+    'font-display text-xl font-medium tracking-wide text-stone-900 dark:text-stone-50 sm:text-2xl';
 
-export const storeMain = 'mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10';
+export const storeMain =
+    `mx-auto max-w-7xl px-3 py-6 ${pbSafe} sm:px-6 sm:py-8 sm:pb-10 lg:py-10`;
 
 export const storeHero =
-    'relative overflow-hidden bg-gradient-to-br from-rose-950 via-stone-900 to-stone-950 px-6 py-16 text-stone-50 sm:px-12 sm:py-24';
+    'relative -mx-3 overflow-hidden bg-gradient-to-br from-rose-950 via-stone-900 to-stone-950 px-4 py-12 text-stone-50 sm:mx-0 sm:rounded-none sm:px-8 sm:py-16 lg:px-12 lg:py-24';
 
 export const storeHeroTitle =
-    'font-display text-4xl font-medium leading-tight tracking-wide sm:text-5xl lg:text-6xl';
+    'font-display text-3xl font-medium leading-tight tracking-wide sm:text-4xl sm:leading-tight lg:text-5xl xl:text-6xl';
 
 export const storeHeroLead =
     'mt-5 max-w-lg text-sm leading-relaxed text-stone-300 sm:text-base';
@@ -53,7 +84,7 @@ export const storeSectionEyebrow =
     'text-[10px] font-semibold uppercase tracking-[0.3em] text-stone-500 dark:text-stone-400';
 
 export const storeProductGrid =
-    'grid gap-x-4 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+    'grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4';
 
 export const storeProductCard =
     'group flex h-full flex-col';
@@ -74,7 +105,16 @@ export const storeFooterInner =
     'mx-auto flex max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 md:flex-row md:justify-between';
 
 export const storeSidebar =
-    'border border-stone-200 bg-white p-5 dark:border-stone-800 dark:bg-stone-900 lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto';
+    'border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900 sm:p-5 lg:sticky lg:top-36 lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto';
+
+export const storeFilterToggle =
+    'flex min-h-11 w-full items-center justify-center gap-2 border border-stone-300 bg-white text-[11px] font-semibold uppercase tracking-wider text-stone-800 lg:hidden dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200';
+
+export const storeCartLine =
+    'flex flex-col gap-3 border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900 sm:flex-row sm:gap-4 sm:p-5';
+
+export const storeCartLineBody =
+    'flex min-w-0 flex-1 gap-3 sm:gap-4';
 
 export const storeCard =
     'border border-stone-200 bg-white p-5 sm:p-6 dark:border-stone-800 dark:bg-stone-900';
@@ -83,10 +123,13 @@ export const storeCardMuted =
     'border border-dashed border-stone-300 bg-stone-100/80 p-5 text-sm dark:border-stone-700 dark:bg-stone-900/50';
 
 export const storeBtnPrimary =
-    'inline-flex items-center justify-center bg-stone-900 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200';
+    'inline-flex min-h-11 items-center justify-center bg-stone-900 px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-stone-800 sm:px-6 sm:text-[11px] sm:tracking-[0.2em] dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200';
 
 export const storeBtnSecondary =
-    'inline-flex items-center justify-center border border-stone-900 bg-transparent px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-900 transition hover:bg-stone-900 hover:text-white dark:border-stone-100 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900';
+    'inline-flex min-h-11 items-center justify-center border border-stone-900 bg-transparent px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-900 transition hover:bg-stone-900 hover:text-white sm:px-6 sm:text-[11px] sm:tracking-[0.2em] dark:border-stone-100 dark:text-stone-100 dark:hover:bg-stone-100 dark:hover:text-stone-900';
+
+export const storeBtnCompact =
+    'inline-flex min-h-10 min-w-10 items-center justify-center px-3 py-2 text-[10px] font-semibold uppercase tracking-wider sm:min-h-11 sm:px-5 sm:py-2.5 sm:text-[11px]';
 
 export const storeBtnGhost =
     'inline-flex items-center justify-center text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-600 underline-offset-4 hover:underline dark:text-stone-400';
@@ -105,10 +148,51 @@ export const storeMutedText = 'text-sm text-stone-500 dark:text-stone-400';
 export const storeUserShell = storeShell;
 
 export const storeUserTopBar =
-    'border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900';
+    'border-b border-stone-200 bg-stone-50/95 backdrop-blur-md dark:border-stone-800 dark:bg-stone-950/95';
+
+export const storeUserTopBarInner =
+    'mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6';
+
+export const storeUserMobileHeader =
+    `border-b border-stone-200 bg-stone-50/95 backdrop-blur-md ${ptSafe} dark:border-stone-800 dark:bg-stone-950/95`;
+
+export const storeUserMobileHeaderRow =
+    'flex min-h-12 items-center justify-between gap-2 px-3 py-2 sm:px-4';
+
+export const storeUserMobileTabs =
+    `${scrollX} flex gap-1.5 border-t border-stone-100 px-3 py-2 dark:border-stone-800`;
+
+export const storeUserMobileTabActive =
+    'shrink-0 bg-stone-900 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-white dark:bg-stone-100 dark:text-stone-900';
+
+export const storeUserMobileTabInactive =
+    'shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400';
 
 export const storeUserSidebar =
-    'hidden w-64 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 lg:flex';
+    'hidden w-64 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 lg:fixed lg:bottom-0 lg:left-0 lg:top-16 lg:z-30 lg:flex';
+
+export const storeUserMobileMenu =
+    'border-t border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900';
+
+export const storeUserMain =
+    `mx-auto w-full min-w-0 max-w-7xl flex-1 px-3 py-5 ${pbSafe} sm:px-6 sm:py-8 lg:ml-64 lg:max-w-[calc(100%-16rem)] lg:px-8 lg:py-10`;
+
+export const storeUserPageTitle =
+    'mb-6 hidden font-display text-2xl text-stone-900 dark:text-stone-50 sm:text-3xl lg:block';
+
+export const storeTabList =
+    `${scrollX} flex border-b border-stone-200 bg-stone-50/90 dark:border-stone-800 dark:bg-stone-900/60`;
+
+export const storeTabBtnActive =
+    'shrink-0 whitespace-nowrap border-b-2 border-stone-900 px-4 py-3 text-sm font-medium text-stone-900 dark:border-stone-100 dark:text-stone-50';
+
+export const storeTabBtnInactive =
+    'shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 py-3 text-sm font-medium text-stone-500 transition hover:border-stone-300 hover:text-stone-900 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-100';
+
+export const storePanel =
+    'overflow-hidden border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900';
+
+export const storePanelBody = 'p-4 sm:p-6';
 
 export const storeUserNavActive =
     'border-l-2 border-stone-900 bg-stone-50 py-3 pl-4 text-[11px] font-semibold uppercase tracking-wider text-stone-900 dark:border-stone-100 dark:bg-stone-900/80 dark:text-stone-50';
@@ -153,4 +237,10 @@ export const storeEditorialBanner =
     'relative flex min-h-[420px] flex-col justify-end overflow-hidden bg-stone-300 dark:bg-stone-800';
 
 export const storeCategoryTile =
-    'group relative flex aspect-[4/5] items-end overflow-hidden bg-stone-200 p-6 dark:bg-stone-800';
+    'group relative flex min-h-[200px] aspect-[4/5] items-end overflow-hidden bg-stone-200 p-4 sm:min-h-0 sm:p-6 dark:bg-stone-800';
+
+export const storeHeroActions =
+    'mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-4';
+
+export const storeHeroBtn =
+    'w-full justify-center sm:w-auto';
