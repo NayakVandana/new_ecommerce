@@ -1,17 +1,24 @@
-import {
+﻿import {
     adminBackLink,
     adminCancelBtn,
     adminCheckbox,
-    adminDividerTop,
     adminErrorBanner,
+    adminFormSection,
     adminInput,
     adminLabel,
     adminMutedText,
-    adminPrimaryBtn,
-    adminSmallHeading,
-    adminStackPageWrap,
-    adminWideFormCard,
+    adminProductPageWrap,
+    adminStickyAside,
+    adminVariantCard,
+    adminVariantCardHeader,
 } from '@/admin/adminTheme';
+import {
+    AdminFieldError,
+    AdminFormField,
+    PublishPanel,
+    VariantColorField,
+    VariantMediaToggle,
+} from '@/Pages/Admin/Products/ProductFormUi';
 import {
     adminApiPost,
     adminApiPostMultipart,
@@ -26,13 +33,27 @@ import {
     isCustomFashionSize,
     normalizeVariantSizeForApi,
 } from '@/constants/fashionSizes';
-import { VARIANT_COLOR_PRESET_SWATCHES, VARIANT_PRESET_HEX_SET } from '@/constants/variantColorPresets';
 import {
-    colorPickerInputValue,
     isHexColorString,
     normalizeColorHexForApi,
     normalizeHexColor6,
 } from '@/lib/variantColor';
+import {
+    variantHasColor,
+    variantHasImage,
+    variantHasSize,
+    variantSizeColorKey,
+} from '@/lib/productVariant';
+import {
+    emptyProductFormErrors,
+    hasAnyFieldErrors,
+    mergeApiFailure,
+    setVariantFieldError,
+    scrollToFirstProductError,
+    validateProductFormClient,
+    type ProductFormErrors,
+    type VariantFieldErrors,
+} from '@/lib/productFormErrors';
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -351,7 +372,7 @@ export default function Form() {
     }, [existing?.id, initialProductFields, existing]);
 
     const [processing, setProcessing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [errors, setErrors] = useState<ProductFormErrors>({});
     const [uploadBusyKey, setUploadBusyKey] = useState<string | null>(null);
 
     const handleVariantImageUpload = async (
@@ -364,14 +385,32 @@ export default function Form() {
             return;
         }
         if (!file.type.startsWith('image/')) {
-            setError('Only image files can be uploaded here.');
+            setErrors((prev) =>
+                setVariantFieldError(
+                    prev,
+                    variantIndex,
+                    'media',
+                    'Only image files can be uploaded here.',
+                ),
+            );
 
             return;
         }
 
         const key = `v${variantIndex}-img${imageIndex}`;
         setUploadBusyKey(key);
-        setError(null);
+        setErrors((prev) => {
+            const next = { ...prev };
+            if (next.variants?.[variantIndex]) {
+                const variants = { ...next.variants };
+                const row = { ...variants[variantIndex] };
+                delete row.media;
+                delete row.images;
+                variants[variantIndex] = row;
+                next.variants = variants;
+            }
+            return next;
+        });
 
         try {
             const fd = new FormData();
@@ -381,7 +420,14 @@ export default function Form() {
             >('/media/upload-product-image', fd);
 
             if (!res.success || !res.data?.path) {
-                setError(res.message || 'Image upload failed.');
+                setErrors((prev) =>
+                    setVariantFieldError(
+                        prev,
+                        variantIndex,
+                        'media',
+                        res.message || 'Image upload failed.',
+                    ),
+                );
 
                 return;
             }
@@ -402,7 +448,14 @@ export default function Form() {
                 }),
             );
         } catch {
-            setError('Image upload failed.');
+            setErrors((prev) =>
+                setVariantFieldError(
+                    prev,
+                    variantIndex,
+                    'media',
+                    'Image upload failed.',
+                ),
+            );
         } finally {
             setUploadBusyKey(null);
             input.value = '';
@@ -419,14 +472,31 @@ export default function Form() {
             return;
         }
         if (!file.type.startsWith('video/')) {
-            setError('Only video files can be uploaded here.');
+            setErrors((prev) =>
+                setVariantFieldError(
+                    prev,
+                    variantIndex,
+                    'media',
+                    'Only video files can be uploaded here.',
+                ),
+            );
 
             return;
         }
 
         const key = `v${variantIndex}-vid${videoIndex}`;
         setUploadBusyKey(key);
-        setError(null);
+        setErrors((prev) => {
+            const next = { ...prev };
+            if (next.variants?.[variantIndex]) {
+                const variants = { ...next.variants };
+                const row = { ...variants[variantIndex] };
+                delete row.media;
+                variants[variantIndex] = row;
+                next.variants = variants;
+            }
+            return next;
+        });
 
         try {
             const fd = new FormData();
@@ -436,7 +506,14 @@ export default function Form() {
             >('/media/upload-product-video', fd);
 
             if (!res.success || !res.data?.url) {
-                setError(res.message || 'Video upload failed.');
+                setErrors((prev) =>
+                    setVariantFieldError(
+                        prev,
+                        variantIndex,
+                        'media',
+                        res.message || 'Video upload failed.',
+                    ),
+                );
 
                 return;
             }
@@ -459,7 +536,14 @@ export default function Form() {
                 }),
             );
         } catch {
-            setError('Video upload failed.');
+            setErrors((prev) =>
+                setVariantFieldError(
+                    prev,
+                    variantIndex,
+                    'media',
+                    'Video upload failed.',
+                ),
+            );
         } finally {
             setUploadBusyKey(null);
             input.value = '';
@@ -508,25 +592,70 @@ export default function Form() {
         );
     };
 
+    const [variantMediaOpen, setVariantMediaOpen] = useState<
+        Record<number, boolean>
+    >({});
+
+    const toggleVariantMedia = (index: number) => {
+        setVariantMediaOpen((prev) => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
+    };
+
+    const variantFieldErrors = (index: number) => errors.variants?.[index];
+
+    const clearVariantFieldError = (
+        index: number,
+        field: keyof VariantFieldErrors,
+    ) => {
+        setErrors((prev) => {
+            const row = prev.variants?.[index];
+            if (!row?.[field]) {
+                return prev;
+            }
+            const variants = { ...prev.variants };
+            const nextRow = { ...variants[index] };
+            delete nextRow[field];
+            variants[index] = nextRow;
+
+            return { ...prev, variants };
+        });
+    };
+
     const submit = async (e: FormEvent) => {
         e.preventDefault();
         setProcessing(true);
-        setError(null);
+        setErrors({});
 
-        for (const row of variants) {
-            const priceNum = Number(row.price);
-            if (!row.sku.trim()) {
-                setError('Each variant needs a SKU.');
-                setProcessing(false);
+        const clientErrors = validateProductFormClient({
+            subcategoryId,
+            genderId,
+            name,
+            variants,
+            variantHasSize,
+            variantHasColor,
+            variantHasImage,
+            variantSizeColorKey,
+        });
 
-                return;
+        if (hasAnyFieldErrors(clientErrors)) {
+            setErrors(clientErrors);
+            if (clientErrors.variants) {
+                const openMedia: Record<number, boolean> = {};
+                Object.entries(clientErrors.variants).forEach(([i, v]) => {
+                    if (v.images) {
+                        openMedia[Number(i)] = true;
+                    }
+                });
+                if (Object.keys(openMedia).length > 0) {
+                    setVariantMediaOpen((prev) => ({ ...prev, ...openMedia }));
+                }
             }
-            if (Number.isNaN(priceNum) || priceNum < 0) {
-                setError(`Invalid price for SKU "${row.sku}".`);
-                setProcessing(false);
+            scrollToFirstProductError(clientErrors);
+            setProcessing(false);
 
-                return;
-            }
+            return;
         }
 
         const buildVariantImagePayload = (rows: ImageFormRow[]) =>
@@ -599,14 +728,26 @@ export default function Form() {
             }
 
             if (!res.success) {
-                setError(res.message || 'Could not save.');
+                const apiErrors = mergeApiFailure(
+                    res.message || 'Could not save.',
+                    res.data,
+                    variants.map((v) => ({ sku: v.sku })),
+                );
+                setErrors(apiErrors);
+                scrollToFirstProductError(apiErrors);
 
                 return;
             }
 
             router.visit(route('admin.products.index'));
         } catch {
-            setError('Could not save.');
+            const fallback = mergeApiFailure(
+                'Could not save.',
+                null,
+                variants.map((v) => ({ sku: v.sku })),
+            );
+            setErrors(fallback);
+            scrollToFirstProductError(fallback);
         } finally {
             setProcessing(false);
         }
@@ -632,7 +773,7 @@ export default function Form() {
         <>
             <Head title={existing ? 'Edit product' : 'New product'} />
             <AdminLayout heading={existing ? 'Edit product' : 'New product'}>
-                <div className={adminStackPageWrap}>
+                <div className={adminProductPageWrap}>
                     <div>
                         <Link
                             href={route('admin.products.index')}
@@ -642,28 +783,44 @@ export default function Form() {
                         </Link>
                     </div>
 
-                    {error && <div className={adminErrorBanner}>{error}</div>}
+                    {errors.form ? (
+                        <div data-error-anchor="form" className={adminErrorBanner}>
+                            {errors.form}
+                        </div>
+                    ) : null}
 
                     <form
+                        noValidate
                         onSubmit={(e) => void submit(e)}
-                        className={adminWideFormCard}
+                        className="mt-4 grid gap-6 lg:grid-cols-3 lg:items-start"
                     >
-                        <div className="grid gap-5 sm:grid-cols-2">
-                            <div className="sm:col-span-2">
-                                <label
-                                    htmlFor="name"
-                                    className={adminLabel}
-                                >
-                                    Name
-                                </label>
+                        <div className="space-y-5 lg:col-span-2">
+                        <section className={`${adminFormSection} space-y-4`}>
+                        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                            Product details
+                        </h2>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <AdminFormField
+                                id="name"
+                                label="Name"
+                                required
+                                error={errors.name}
+                                dataErrorField="name"
+                            >
                                 <input
                                     id="name"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            name: undefined,
+                                        }));
+                                    }}
                                     className={adminInput}
+                                    placeholder="Enter product name"
                                 />
-                            </div>
+                            </AdminFormField>
                             <div>
                                 <label
                                     htmlFor="slug"
@@ -692,121 +849,6 @@ export default function Form() {
                                     className={adminInput}
                                 />
                             </div>
-                            <div>
-                                <label
-                                    htmlFor="brand_id"
-                                    className={adminLabel}
-                                >
-                                    Brand
-                                </label>
-                                <select
-                                    id="brand_id"
-                                    value={brandId ?? ''}
-                                    onChange={(e) =>
-                                        setBrandId(
-                                            e.target.value
-                                                ? Number(e.target.value)
-                                                : null,
-                                        )
-                                    }
-                                    className={adminInput}
-                                >
-                                    <option value="">— None —</option>
-                                    {meta.brands.map((b) => (
-                                        <option key={b.id} value={b.id}>
-                                            {b.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="subcategory_id"
-                                    className={adminLabel}
-                                >
-                                    Subcategory
-                                </label>
-                                <select
-                                    id="subcategory_id"
-                                    value={subcategoryId ?? ''}
-                                    onChange={(e) =>
-                                        setSubcategoryId(
-                                            e.target.value
-                                                ? Number(e.target.value)
-                                                : null,
-                                        )
-                                    }
-                                    className={adminInput}
-                                >
-                                    <option value="">— None —</option>
-                                    {meta.subcategories.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name}
-                                            {s.category?.name
-                                                ? ` (${s.category.name})`
-                                                : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="gender_id"
-                                    className={adminLabel}
-                                >
-                                    Gender
-                                </label>
-                                <select
-                                    id="gender_id"
-                                    value={genderId ?? ''}
-                                    onChange={(e) =>
-                                        setGenderId(
-                                            e.target.value
-                                                ? Number(e.target.value)
-                                                : null,
-                                        )
-                                    }
-                                    className={adminInput}
-                                >
-                                    <option value="">— None —</option>
-                                    {meta.genders.map((g) => (
-                                        <option key={g.id} value={g.id}>
-                                            {g.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="status"
-                                    className={adminLabel}
-                                >
-                                    Status
-                                </label>
-                                <select
-                                    id="status"
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    className={adminInput}
-                                >
-                                    <option value="draft">Draft</option>
-                                    <option value="published">Published</option>
-                                    <option value="archived">Archived</option>
-                                </select>
-                            </div>
-                            <label className="flex items-center gap-2 sm:col-span-2">
-                                <input
-                                    type="checkbox"
-                                    checked={isFeatured}
-                                    onChange={(e) =>
-                                        setIsFeatured(e.target.checked)
-                                    }
-                                    className={adminCheckbox}
-                                />
-                                <span className="text-sm text-slate-700 dark:text-slate-300">
-                                    Featured
-                                </span>
-                            </label>
                         </div>
 
                         <div>
@@ -839,7 +881,11 @@ export default function Form() {
                                 className={adminInput}
                             />
                         </div>
-                        <div className="grid gap-5 sm:grid-cols-2">
+                        <details className="rounded-xl border border-slate-200/80 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/30">
+                            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                SEO (optional)
+                            </summary>
+                            <div className="grid gap-4 border-t border-slate-200/80 p-4 sm:grid-cols-2 dark:border-slate-700">
                             <div>
                                 <label
                                     htmlFor="meta_title"
@@ -872,19 +918,24 @@ export default function Form() {
                                     className={adminInput}
                                 />
                             </div>
-                        </div>
+                            </div>
+                        </details>
 
-                        <div className={adminDividerTop}>
-                            <h3 className={adminSmallHeading}>Variants</h3>
-                            <p className={`mt-1 ${adminMutedText}`}>
-                                At least one variant (SKU + price). Mark one as
-                                default for storefront pricing. Size uses a
-                                fashion list (letter, EU numeric, one size); pick
-                                “Other” for custom values. Color: optional name
-                                plus hex — presets show a violet ring when active;
-                                custom colors (picker or any hex not in the list)
-                                show a green ring on the picker. Optional barcode per
-                                row.
+                        </section>
+
+                        <section className={`${adminFormSection} space-y-4`}>
+                            <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                                Variants
+                            </h3>
+                            <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-800 dark:bg-violet-950 dark:text-violet-200">
+                                {variants.length}
+                            </span>
+                            </div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                One row per SKU. Each variant needs a unique size,
+                                color, and at least one image. Mark a default;
+                                expand media when needed.
                             </p>
                             <div className="mt-4 space-y-4">
                                 {variants.map((row, index) => (
@@ -894,9 +945,13 @@ export default function Form() {
                                                 ? `v-${row.id}`
                                                 : `new-${index}`
                                         }
-                                        className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40"
+                                        className={adminVariantCard}
                                     >
-                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                        <div className={adminVariantCardHeader}>
+                                            <div className="flex items-center gap-2">
+                                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white">
+                                                    {index + 1}
+                                                </span>
                                             <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                                                 <input
                                                     type="radio"
@@ -909,6 +964,7 @@ export default function Form() {
                                                 />
                                                 Default variant
                                             </label>
+                                            </div>
                                             {variants.length > 1 ? (
                                                 <button
                                                     type="button"
@@ -921,8 +977,8 @@ export default function Form() {
                                                 </button>
                                             ) : null}
                                         </div>
-                                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                            <div className="sm:col-span-2 lg:col-span-1">
+                                        <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+                                            <div className="sm:col-span-2 lg:col-span-1" data-error-field={`variant-${index}-sku`}>
                                                 <label
                                                     className={adminLabel}
                                                 >
@@ -930,7 +986,8 @@ export default function Form() {
                                                 </label>
                                                 <input
                                                     value={row.sku}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
+                                                        clearVariantFieldError(index, 'sku');
                                                         setVariants((rows) =>
                                                             rows.map((r, i) =>
                                                                 i === index
@@ -942,11 +999,12 @@ export default function Form() {
                                                                       }
                                                                     : r,
                                                             ),
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                     required
                                                     className={adminInput}
                                                 />
+                                                <AdminFieldError message={variantFieldErrors(index)?.sku} />
                                             </div>
                                             <div>
                                                 <label
@@ -959,7 +1017,8 @@ export default function Form() {
                                                     step="0.01"
                                                     min={0}
                                                     value={row.price}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
+                                                        clearVariantFieldError(index, 'price');
                                                         setVariants((rows) =>
                                                             rows.map((r, i) =>
                                                                 i === index
@@ -971,11 +1030,12 @@ export default function Form() {
                                                                       }
                                                                     : r,
                                                             ),
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                     required
                                                     className={adminInput}
                                                 />
+                                                <AdminFieldError message={variantFieldErrors(index)?.price} />
                                             </div>
                                             <div>
                                                 <label
@@ -1006,17 +1066,23 @@ export default function Form() {
                                                     className={adminInput}
                                                 />
                                             </div>
-                                            <div>
+                                            <div data-error-field={`variant-${index}-size`}>
                                                 <label
                                                     className={adminLabel}
                                                 >
-                                                    Size
+                                                    Size{' '}
+                                                    <span className="text-red-600 dark:text-red-400">
+                                                        *
+                                                    </span>
                                                 </label>
                                                 <select
+                                                    required
                                                     value={fashionSizeSelectValue(
                                                         row.size,
                                                     )}
                                                     onChange={(e) => {
+                                                        clearVariantFieldError(index, 'size');
+                                                        clearVariantFieldError(index, 'combination');
                                                         const v = e.target.value;
                                                         setVariants((rows) =>
                                                             rows.map((r, i) => {
@@ -1120,218 +1186,42 @@ export default function Form() {
                                                         className={`${adminInput} mt-2`}
                                                     />
                                                 ) : null}
+                                                <AdminFieldError message={variantFieldErrors(index)?.size} />
+                                                <AdminFieldError message={variantFieldErrors(index)?.combination} />
                                             </div>
-                                            <div className="sm:col-span-2 lg:col-span-3">
-                                                <label
-                                                    className={adminLabel}
-                                                >
-                                                    Color name
-                                                </label>
-                                                <input
-                                                    value={row.color}
-                                                    onChange={(e) =>
+                                            <div className="sm:col-span-2 lg:col-span-3" data-error-field={`variant-${index}-color`}>
+                                                <VariantColorField
+                                                    row={row}
+                                                    onColorNameChange={(value) => {
+                                                        clearVariantFieldError(index, 'color');
+                                                        clearVariantFieldError(index, 'combination');
                                                         setVariants((rows) =>
                                                             rows.map((r, i) =>
-                                                                i === index
-                                                                    ? {
-                                                                          ...r,
-                                                                          color: e
-                                                                              .target
-                                                                              .value,
-                                                                      }
-                                                                    : r,
+                                                                i === index ? { ...r, color: value } : r,
                                                             ),
-                                                        )
-                                                    }
-                                                    placeholder="e.g. Navy, Burgundy"
-                                                    className={adminInput}
+                                                        );
+                                                    }}
+                                                    onColorHexChange={(value) => {
+                                                        clearVariantFieldError(index, 'color');
+                                                        clearVariantFieldError(index, 'combination');
+                                                        setVariants((rows) =>
+                                                            rows.map((r, i) =>
+                                                                i === index ? { ...r, color_hex: value } : r,
+                                                            ),
+                                                        );
+                                                    }}
+                                                    onPresetPick={(hex) => {
+                                                        clearVariantFieldError(index, 'color');
+                                                        clearVariantFieldError(index, 'combination');
+                                                        applyVariantColorHex(index, hex);
+                                                    }}
+                                                    colorNameError={variantFieldErrors(index)?.color}
+                                                    colorError={variantFieldErrors(index)?.color}
+                                                    colorHexError={variantFieldErrors(index)?.color_hex}
+                                                    combinationError={variantFieldErrors(index)?.combination}
                                                 />
                                             </div>
-                                            <div className="sm:col-span-2 lg:col-span-3">
-                                                <label
-                                                    className={adminLabel}
-                                                >
-                                                    Color code (hex)
-                                                </label>
-                                                <p
-                                                    className={`mt-0.5 ${adminMutedText}`}
-                                                >
-                                                    <span className="font-medium text-slate-700 dark:text-slate-200">
-                                                        Presets
-                                                    </span>{' '}
-                                                    use a violet ring when active.{' '}
-                                                    <span className="font-medium text-slate-700 dark:text-slate-200">
-                                                        Custom
-                                                    </span>{' '}
-                                                    uses a green ring when the hex
-                                                    is set and not one of the presets;
-                                                    the dashed picker is idle when a
-                                                    preset is selected or hex is
-                                                    empty.
-                                                </p>
-                                                <div className="mt-2 space-y-3">
-                                                    <div>
-                                                        <p
-                                                            className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300"
-                                                        >
-                                                            Presets
-                                                        </p>
-                                                        <div
-                                                            className="flex flex-wrap items-center gap-2"
-                                                            role="group"
-                                                            aria-label="Preset colors"
-                                                        >
-                                                            {VARIANT_COLOR_PRESET_SWATCHES.map(
-                                                                ({
-                                                                    hex,
-                                                                    label,
-                                                                }) => {
-                                                                    const current =
-                                                                        normalizeHexColor6(
-                                                                            row.color_hex,
-                                                                        );
-                                                                    const selected =
-                                                                        current ===
-                                                                        hex;
-                                                                    const isWhite =
-                                                                        hex ===
-                                                                        '#ffffff';
-
-                                                                    return (
-                                                                        <button
-                                                                            key={
-                                                                                hex
-                                                                            }
-                                                                            type="button"
-                                                                            title={
-                                                                                label
-                                                                            }
-                                                                            aria-label={`${label} ${hex}`}
-                                                                            aria-pressed={
-                                                                                selected
-                                                                            }
-                                                                            onClick={() =>
-                                                                                applyVariantColorHex(
-                                                                                    index,
-                                                                                    hex,
-                                                                                )
-                                                                            }
-                                                                            className={`h-9 w-9 shrink-0 rounded-full border-2 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
-                                                                                selected
-                                                                                    ? 'border-violet-600 ring-2 ring-violet-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
-                                                                                    : isWhite
-                                                                                      ? 'border-slate-300 dark:border-slate-500'
-                                                                                      : 'border-slate-200/80 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-400'
-                                                                            }`}
-                                                                            style={{
-                                                                                backgroundColor:
-                                                                                    hex,
-                                                                            }}
-                                                                        />
-                                                                    );
-                                                                },
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <p
-                                                            className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300"
-                                                        >
-                                                            Custom (picker)
-                                                        </p>
-                                                        {(() => {
-                                                            const currentHex =
-                                                                normalizeHexColor6(
-                                                                    row.color_hex,
-                                                                );
-                                                            const customActive =
-                                                                currentHex !==
-                                                                    null &&
-                                                                !VARIANT_PRESET_HEX_SET.has(
-                                                                    currentHex,
-                                                                );
-
-                                                            return (
-                                                                <input
-                                                                    type="color"
-                                                                    aria-label="Custom color picker"
-                                                                    title="Pick a custom color"
-                                                                    value={colorPickerInputValue(
-                                                                        row.color_hex,
-                                                                    )}
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        setVariants(
-                                                                            (
-                                                                                rows,
-                                                                            ) =>
-                                                                                rows.map(
-                                                                                    (
-                                                                                        r,
-                                                                                        i,
-                                                                                    ) =>
-                                                                                        i ===
-                                                                                        index
-                                                                                            ? {
-                                                                                                  ...r,
-                                                                                                  color_hex:
-                                                                                                      e
-                                                                                                          .target
-                                                                                                          .value.toLowerCase(),
-                                                                                              }
-                                                                                            : r,
-                                                                                ),
-                                                                        )
-                                                                    }
-                                                                    className={`h-9 w-9 shrink-0 cursor-pointer appearance-none overflow-hidden rounded-full border-2 p-0 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 ${
-                                                                        customActive
-                                                                            ? 'border-solid border-emerald-600 ring-2 ring-emerald-500/70 ring-offset-2 ring-offset-white dark:border-emerald-500 dark:ring-emerald-400/50 dark:ring-offset-slate-900'
-                                                                            : 'border-dashed border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-emerald-50/80 dark:border-slate-600 dark:bg-slate-800/80 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30'
-                                                                    }`}
-                                                                />
-                                                            );
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                                <div className="mt-3 flex flex-wrap items-center gap-3">
-                                                    <input
-                                                        id={`variant-color-hex-${index}`}
-                                                        value={row.color_hex}
-                                                        onChange={(e) =>
-                                                            setVariants(
-                                                                (rows) =>
-                                                                    rows.map(
-                                                                        (
-                                                                            r,
-                                                                            i,
-                                                                        ) =>
-                                                                            i ===
-                                                                            index
-                                                                                ? {
-                                                                                      ...r,
-                                                                                      color_hex:
-                                                                                          e
-                                                                                              .target
-                                                                                              .value,
-                                                                                  }
-                                                                                : r,
-                                                                    ),
-                                                            )
-                                                        }
-                                                        placeholder="#2563eb"
-                                                        className={`${adminInput} min-w-[10rem] flex-1 font-mono text-sm`}
-                                                    />
-                                                </div>
-                                                <p
-                                                    className={`mt-1.5 ${adminMutedText}`}
-                                                >
-                                                    Color name and hex are both
-                                                    saved when you submit the
-                                                    product.
-                                                </p>
-                                            </div>
-                                            <div>
+                                                                                        <div>
                                                 <label
                                                     className={adminLabel}
                                                 >
@@ -1358,22 +1248,30 @@ export default function Form() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="mt-5 space-y-5 border-t border-slate-200 pt-5 dark:border-slate-700">
-                                            <div>
-                                                <h4
-                                                    className={`text-sm font-semibold text-slate-800 dark:text-slate-100`}
-                                                >
-                                                    Images (this variant)
+                                        <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700" data-error-field={`variant-${index}-media`}>
+                                            <VariantMediaToggle
+                                                open={variantMediaOpen[index] ?? false}
+                                                onToggle={() => toggleVariantMedia(index)}
+                                                imageCount={row.images.filter((img) => img.path.trim() !== '').length}
+                                                videoCount={row.videos.filter((vid) => vid.url.trim() !== '').length}
+                                            />
+                                            <AdminFieldError message={variantFieldErrors(index)?.media} />
+                                            {!(variantMediaOpen[index] ?? false) ? (
+                                                <AdminFieldError
+                                                    message={
+                                                        variantFieldErrors(index)
+                                                            ?.images
+                                                    }
+                                                />
+                                            ) : null}
+                                            {(variantMediaOpen[index] ?? false) ? (
+                                            <div className="mt-3 space-y-5">
+                                            <div data-error-field={`variant-${index}-images`}>
+                                                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                                    Images{' '}
+                                                    <span className="text-red-600 dark:text-red-400">*</span>
                                                 </h4>
-                                                <p
-                                                    className={`mt-1 ${adminMutedText}`}
-                                                >
-                                                    Upload image files only
-                                                    (JPEG, PNG, WebP, and other
-                                                    common image types). Choose
-                                                    one primary for catalog
-                                                    thumbnails for this SKU.
-                                                </p>
+                                                <AdminFieldError message={variantFieldErrors(index)?.images} />
                                                 <div className="mt-3 space-y-4">
                                                     {row.images.map(
                                                         (imgRow, imgIndex) => (
@@ -1890,6 +1788,8 @@ export default function Form() {
                                                     + Add video row
                                                 </button>
                                             </div>
+                                            </div>
+                                            ) : null}
                                         </div>
                                     </div>
                                 ))}
@@ -1901,23 +1801,113 @@ export default function Form() {
                             >
                                 + Add variant
                             </button>
+                        </section>
                         </div>
 
-                        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:flex-wrap">
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className={adminPrimaryBtn}
-                            >
-                                {processing ? 'Saving…' : 'Save'}
-                            </button>
-                            <Link
-                                href={route('admin.products.index')}
-                                className={`inline-flex items-center justify-center ${adminCancelBtn}`}
-                            >
-                                Cancel
-                            </Link>
-                        </div>
+                        <aside className={`${adminStickyAside} lg:col-span-1`}>
+                            <section className={`${adminFormSection} space-y-4`}>
+                                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Catalog &amp; status</h2>
+                                <div>
+                                    <label htmlFor="brand_id" className={adminLabel}>Brand</label>
+                                    <select id="brand_id" value={brandId ?? ''} onChange={(e) => setBrandId(e.target.value ? Number(e.target.value) : null)} className={adminInput}>
+                                        <option value="">— None —</option>
+                                        {meta.brands.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
+                                    </select>
+                                </div>
+                                <div data-error-field="subcategory_id">
+                                    <label htmlFor="subcategory_id" className={adminLabel}>
+                                        Subcategory{' '}
+                                        <span className="text-red-600 dark:text-red-400">*</span>
+                                    </label>
+                                    <select
+                                        id="subcategory_id"
+                                        required
+                                        value={subcategoryId ?? ''}
+                                        onChange={(e) => {
+                                            setSubcategoryId(
+                                                e.target.value
+                                                    ? Number(e.target.value)
+                                                    : null,
+                                            );
+                                            setErrors((prev) => ({
+                                                ...prev,
+                                                subcategory_id: undefined,
+                                            }));
+                                        }}
+                                        className={adminInput}
+                                    >
+                                        <option value="" disabled>
+                                            Select subcategory
+                                        </option>
+                                        {meta.subcategories.map((s) => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.name}
+                                                {s.category?.name
+                                                    ? ` (${s.category.name})`
+                                                    : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <AdminFieldError message={errors.subcategory_id} />
+                                    {meta.subcategories.length === 0 ? (
+                                        <p className={`mt-1 ${adminMutedText}`}>
+                                            No subcategories yet. Add one under Categories.
+                                        </p>
+                                    ) : null}
+                                </div>
+                                <div data-error-field="gender_id">
+                                    <label htmlFor="gender_id" className={adminLabel}>
+                                        Gender{' '}
+                                        <span className="text-red-600 dark:text-red-400">*</span>
+                                    </label>
+                                    <select
+                                        id="gender_id"
+                                        required
+                                        value={genderId ?? ''}
+                                        onChange={(e) => {
+                                            setGenderId(
+                                                e.target.value
+                                                    ? Number(e.target.value)
+                                                    : null,
+                                            );
+                                            setErrors((prev) => ({
+                                                ...prev,
+                                                gender_id: undefined,
+                                            }));
+                                        }}
+                                        className={adminInput}
+                                    >
+                                        <option value="" disabled>
+                                            Select gender
+                                        </option>
+                                        {meta.genders.map((g) => (
+                                            <option key={g.id} value={g.id}>
+                                                {g.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <AdminFieldError message={errors.gender_id} />
+                                    {meta.genders.length === 0 ? (
+                                        <p className={`mt-1 ${adminMutedText}`}>
+                                            No active genders. Add genders in catalog settings.
+                                        </p>
+                                    ) : null}
+                                </div>
+                                <div>
+                                    <label htmlFor="status" className={adminLabel}>Status</label>
+                                    <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className={adminInput}>
+                                        <option value="draft">Draft</option>
+                                        <option value="published">Published</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
+                                <label className="flex items-center gap-2">
+                                    <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className={adminCheckbox} />
+                                    <span className="text-sm text-slate-700 dark:text-slate-300">Featured</span>
+                                </label>
+                            </section>
+                            <PublishPanel processing={processing} cancelHref={route('admin.products.index')} />
+                        </aside>
                     </form>
                 </div>
             </AdminLayout>

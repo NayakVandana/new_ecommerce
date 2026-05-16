@@ -9,6 +9,10 @@ export const adminInput =
 export const adminLabel =
     'block text-sm font-medium text-slate-700 dark:text-slate-300';
 
+/** Inline validation — red text directly under the input (reference form style) */
+export const adminFieldError =
+    'mt-1 block text-sm font-normal leading-snug text-red-600 dark:text-red-400';
+
 /** Narrow admin forms — centers on large screens, full width on mobile */
 export const adminFormPageWrap =
     'mx-auto w-full max-w-xl space-y-6 lg:max-w-2xl';
@@ -16,6 +20,28 @@ export const adminFormPageWrap =
 /** Wide stacks (product form, category + subcategories) */
 export const adminStackPageWrap =
     'mx-auto w-full max-w-3xl space-y-6 xl:max-w-4xl';
+
+/** Product create/edit — room for sidebar + variant cards */
+export const adminProductPageWrap =
+    'mx-auto w-full max-w-6xl space-y-6 pb-10';
+
+export const adminFormSection =
+    'rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:border-slate-700/80 dark:bg-slate-900/80 dark:ring-white/5';
+
+export const adminFormSectionTitle =
+    'text-base font-semibold tracking-tight text-slate-900 dark:text-white';
+
+export const adminFormSectionDesc =
+    'mt-0.5 text-sm text-slate-500 dark:text-slate-400';
+
+export const adminVariantCard =
+    'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:ring-white/5';
+
+export const adminVariantCardHeader =
+    'flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/90 px-4 py-3 dark:border-slate-700/80 dark:bg-slate-800/50';
+
+export const adminStickyAside =
+    'space-y-4 lg:sticky lg:top-6 lg:self-start';
 
 export const adminFormCard =
     'w-full space-y-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-lg shadow-slate-200/40 ring-1 ring-slate-100 sm:p-6 dark:border-slate-600/70 dark:bg-slate-900 dark:shadow-black/25 dark:ring-white/10';

@@ -105,8 +105,8 @@ class ProductApiController extends Controller
 
             $rules = [
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-                'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
-                'gender_id' => ['nullable', 'integer', 'exists:genders,id'],
+                'subcategory_id' => ['required', 'integer', 'exists:subcategories,id'],
+                'gender_id' => ['required', 'integer', 'exists:genders,id'],
                 'name' => ['required', 'string', 'max:255'],
                 'slug' => ['nullable', 'string', 'max:255'],
                 'base_sku' => ['nullable', 'string', 'max:255'],
@@ -161,6 +161,11 @@ class ProductApiController extends Controller
             }
 
             if ($useVariantsArray) {
+                $sizeColorError = $this->assertVariantSizeColorRules($variantsInput);
+                if ($sizeColorError !== null) {
+                    return $this->sendJsonResponse(false, $sizeColorError, null, 200);
+                }
+
                 foreach ($variantsInput as $row) {
                     if (ProductVariant::query()->where('sku', $row['sku'])->exists()) {
                         return $this->sendJsonResponse(false, 'SKU "'.$row['sku'].'" is already in use.', null, 200);
@@ -299,8 +304,8 @@ class ProductApiController extends Controller
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer', 'exists:products,id'],
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-                'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
-                'gender_id' => ['nullable', 'integer', 'exists:genders,id'],
+                'subcategory_id' => ['required', 'integer', 'exists:subcategories,id'],
+                'gender_id' => ['required', 'integer', 'exists:genders,id'],
                 'name' => ['sometimes', 'string', 'max:255'],
                 'slug' => ['nullable', 'string', 'max:255'],
                 'base_sku' => ['nullable', 'string', 'max:255'],
@@ -377,6 +382,11 @@ class ProductApiController extends Controller
             $useVariantsArray = is_array($variantsPayload) && count($variantsPayload) > 0;
 
             if ($useVariantsArray) {
+                $sizeColorError = $this->assertVariantSizeColorRules($variantsPayload);
+                if ($sizeColorError !== null) {
+                    return $this->sendJsonResponse(false, $sizeColorError, null, 200);
+                }
+
                 $seen = [];
                 foreach ($variantsPayload as $row) {
                     $sku = $row['sku'] ?? '';
@@ -739,6 +749,51 @@ class ProductApiController extends Controller
         } else {
             $q->whereNotIn('id', $idsToKeep)->delete();
         }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $variantsInput
+     */
+    private function assertVariantSizeColorRules(array $variantsInput): ?string
+    {
+        $seen = [];
+
+        foreach ($variantsInput as $row) {
+            $size = isset($row['size']) ? trim((string) $row['size']) : '';
+            $colorName = trim((string) ($row['color'] ?? ''));
+            $hex = $this->normalizeVariantColorHex($row['color_hex'] ?? null);
+
+            if ($size === '') {
+                return 'Each variant must have a size.';
+            }
+
+            if ($hex === null && $colorName === '') {
+                return 'Each variant must have a color (name or hex).';
+            }
+
+            $hasImage = false;
+            foreach ($row['images'] ?? [] as $img) {
+                if (trim((string) ($img['path'] ?? '')) !== '') {
+                    $hasImage = true;
+
+                    break;
+                }
+            }
+
+            if (! $hasImage) {
+                return 'Each variant must have at least one image.';
+            }
+
+            $key = $size."\0".($hex ?? strtolower($colorName));
+
+            if (isset($seen[$key])) {
+                return 'Duplicate variant: the same size and color combination is not allowed.';
+            }
+
+            $seen[$key] = true;
+        }
+
+        return null;
     }
 
     private function normalizeVariantColorHex(mixed $value): ?string
