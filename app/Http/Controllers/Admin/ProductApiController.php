@@ -9,6 +9,7 @@ use App\Models\ProductVariant;
 use App\Models\ProductVideo;
 use App\Services\Admin\ProductFormLoaderService;
 use App\Services\Admin\ProductFormMetaService;
+use App\Support\StoreCatalog;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +74,13 @@ class ProductApiController extends Controller
 
             if ($request->filled('brand_id')) {
                 $query->where('brand_id', $request->input('brand_id'));
+            }
+
+            if (StoreCatalog::womenOnly()) {
+                $womenId = StoreCatalog::womenGenderId();
+                if ($womenId) {
+                    $query->where('gender_id', $womenId);
+                }
             }
 
             $products = $query->paginate($perPage, ['*'], 'page', $currentPage);

@@ -1,3 +1,4 @@
+import { ADMIN_BRAND } from '@/admin/adminBrand';
 import {
     adminErrorBanner,
     adminListPageWrap,
@@ -22,10 +23,10 @@ type Stats = {
 type StatKey = keyof Stats;
 
 const statLabels: Record<StatKey, string> = {
-    products: 'Products',
-    brands: 'Brands',
+    products: 'Ethnic pieces',
+    brands: 'Labels',
     orders: 'Orders',
-    customers: 'Customers',
+    customers: 'Shoppers',
 };
 
 export default function Dashboard() {
@@ -55,8 +56,8 @@ export default function Dashboard() {
 
     return (
         <>
-            <Head title="Admin dashboard" />
-            <AdminLayout heading="Dashboard">
+            <Head title={`${ADMIN_BRAND} · Admin`} />
+            <AdminLayout heading="Women catalog">
                 <div className={adminListPageWrap}>
                     {error && (
                         <div className={adminErrorBanner}>{error}</div>

@@ -110,119 +110,136 @@ export default function Cart() {
     const items = cart?.items ?? [];
 
     return (
-        <GuestPanelLayout title="Cart">
-            <Head title="Store · Cart" />
-            <div className="mx-auto max-w-3xl space-y-6">
-                {error ? <div className={storeErrorBanner}>{error}</div> : null}
+        <GuestPanelLayout title="Shopping bag">
+            <Head title="ÉLAN · Bag" />
 
-                {loading ? (
-                    <p className={storeMutedText}>Loading cart…</p>
-                ) : items.length === 0 ? (
-                    <div className={storeCard}>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                            Your cart is empty
-                        </h2>
-                        <p className={`mt-2 ${storeMutedText}`}>
-                            Browse the catalog and add items to your cart.
-                        </p>
-                        <Link href={route('guest.catalog')} className={`${storeBtnPrimary} mt-6 inline-flex`}>
-                            Browse products
-                        </Link>
-                    </div>
-                ) : (
-                    <>
-                        <ul className="space-y-4">
-                            {items.map((item) => {
-                                const src = cartImageSrc(item.image_path);
+            {error ? <div className={`mb-6 ${storeErrorBanner}`}>{error}</div> : null}
 
-                                return (
-                                    <li key={item.id} className={`${storeCard} flex gap-4`}>
-                                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
-                                            {src ? (
-                                                <img
-                                                    src={src}
-                                                    alt=""
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                                                    No image
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-semibold text-slate-900 dark:text-white">
-                                                {item.product_name}
-                                            </p>
-                                            <p className="text-xs text-slate-500">{item.variant_label}</p>
-                                            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                {formatMoney(item.unit_price, cart?.currency ?? 'INR')}
-                                            </p>
-                                            <div className="mt-3 flex flex-wrap items-center gap-3">
-                                                <label className="flex items-center gap-2 text-sm">
-                                                    <span className="text-slate-500">Qty</span>
-                                                    <input
-                                                        type="number"
-                                                        min={1}
-                                                        max={item.stock_quantity}
-                                                        value={item.quantity}
-                                                        disabled={busyId === item.id}
-                                                        onChange={(e) =>
-                                                            void updateQty(
-                                                                item,
-                                                                Number(e.target.value),
-                                                            )
-                                                        }
-                                                        className={`${storeInput} w-20 py-1`}
-                                                    />
-                                                </label>
-                                                <button
-                                                    type="button"
-                                                    disabled={busyId === item.id}
-                                                    onClick={() => void removeItem(item)}
-                                                    className="text-sm font-medium text-red-600 dark:text-red-400"
-                                                >
-                                                    Remove
-                                                </button>
+            {loading ? (
+                <p className={storeMutedText}>Loading cart…</p>
+            ) : items.length === 0 ? (
+                <div className={`${storeCard} mx-auto max-w-lg text-center`}>
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        Your cart is empty
+                    </h2>
+                    <p className={`mt-2 ${storeMutedText}`}>
+                        Browse the catalog and add items to your cart.
+                    </p>
+                    <Link href={route('guest.catalog')} className={`${storeBtnPrimary} mt-6 inline-flex`}>
+                        Browse products
+                    </Link>
+                </div>
+            ) : (
+                <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+                    <ul className="space-y-4">
+                        {items.map((item) => {
+                            const src = cartImageSrc(item.image_path);
+
+                            return (
+                                <li key={item.id} className={`${storeCard} flex gap-4`}>
+                                    <Link
+                                        href={route('guest.catalog')}
+                                        className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
+                                    >
+                                        {src ? (
+                                            <img
+                                                src={src}
+                                                alt=""
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                                                No image
                                             </div>
-                                        </div>
-                                        <p className="shrink-0 text-sm font-semibold text-slate-900 dark:text-white">
-                                            {formatMoney(item.line_total, cart?.currency ?? 'INR')}
+                                        )}
+                                    </Link>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-slate-900 dark:text-white">
+                                            {item.product_name}
                                         </p>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                        <p className="text-xs text-slate-500">{item.variant_label}</p>
+                                        <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
+                                            {formatMoney(item.unit_price, cart?.currency ?? 'INR')}
+                                        </p>
+                                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                                            <label className="flex items-center gap-2 text-sm">
+                                                <span className="text-slate-500">Qty</span>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={item.stock_quantity}
+                                                    value={item.quantity}
+                                                    disabled={busyId === item.id}
+                                                    onChange={(e) =>
+                                                        void updateQty(
+                                                            item,
+                                                            Number(e.target.value),
+                                                        )
+                                                    }
+                                                    className={`${storeInput} w-20 py-1`}
+                                                />
+                                            </label>
+                                            <button
+                                                type="button"
+                                                disabled={busyId === item.id}
+                                                onClick={() => void removeItem(item)}
+                                                className="text-sm font-medium text-red-600 dark:text-red-400"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="shrink-0 text-sm font-semibold text-slate-900 dark:text-white">
+                                        {formatMoney(item.line_total, cart?.currency ?? 'INR')}
+                                    </p>
+                                </li>
+                            );
+                        })}
+                    </ul>
 
-                        <div className={storeCard}>
-                            <div className="flex items-center justify-between text-lg font-semibold text-slate-900 dark:text-white">
-                                <span>Subtotal</span>
-                                <span>
+                    <aside className={`${storeCard} h-fit lg:sticky lg:top-24`}>
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                            Order summary
+                        </h2>
+                        <dl className="mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <dt className="text-slate-500">Items ({cart?.count ?? 0})</dt>
+                                <dd className="font-medium text-slate-900 dark:text-white">
                                     {formatMoney(cart?.subtotal ?? 0, cart?.currency ?? 'INR')}
-                                </span>
+                                </dd>
                             </div>
-                            <p className={`mt-2 ${storeMutedText}`}>
-                                Shipping and tax calculated at checkout.
-                            </p>
-                            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                                <span className={`${storeBtnPrimary} cursor-not-allowed opacity-60`}>
-                                    Checkout (coming soon)
-                                </span>
-                                <Link href={route('guest.catalog')} className={storeBtnSecondary}>
-                                    Continue shopping
-                                </Link>
-                                <button
-                                    type="button"
-                                    onClick={() => void clearCart()}
-                                    className="text-sm font-medium text-red-600 dark:text-red-400"
-                                >
-                                    Clear cart
-                                </button>
+                            <div className="flex justify-between">
+                                <dt className="text-slate-500">Shipping</dt>
+                                <dd className="text-slate-600 dark:text-slate-400">Calculated at checkout</dd>
                             </div>
+                        </dl>
+                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
+                            <span className="font-semibold text-slate-900 dark:text-white">Subtotal</span>
+                            <span className="text-lg font-bold text-slate-900 dark:text-white">
+                                {formatMoney(cart?.subtotal ?? 0, cart?.currency ?? 'INR')}
+                            </span>
                         </div>
-                    </>
-                )}
-            </div>
+                        <p className={`mt-2 ${storeMutedText}`}>
+                            Tax and shipping calculated at checkout.
+                        </p>
+                        <div className="mt-6 flex flex-col gap-3">
+                            <span className={`${storeBtnPrimary} cursor-not-allowed text-center opacity-60`}>
+                                Checkout (coming soon)
+                            </span>
+                            <Link href={route('guest.catalog')} className={`${storeBtnSecondary} text-center`}>
+                                Continue shopping
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => void clearCart()}
+                                className="text-sm font-medium text-red-600 dark:text-red-400"
+                            >
+                                Clear cart
+                            </button>
+                        </div>
+                    </aside>
+                </div>
+            )}
         </GuestPanelLayout>
     );
 }

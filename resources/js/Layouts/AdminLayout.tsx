@@ -1,3 +1,4 @@
+import { ADMIN_BRAND, ADMIN_CONSOLE_LABEL } from '@/admin/adminBrand';
 import AdminThemeToggle from '@/admin/AdminThemeToggle';
 import AdminRequireToken from '@/auth/AdminRequireToken';
 import AppearanceSync from '@/Components/AppearanceSync';
@@ -129,11 +130,11 @@ function SidebarContent({
                 onClick={onNavigate}
                 className="mb-8 flex items-center gap-2.5 px-1"
             >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 text-sm font-bold text-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-800 text-sm font-bold text-white">
                     S
                 </div>
                 <span className="text-[15px] font-semibold text-slate-900 dark:text-white">
-                    Store OS
+                    {ADMIN_BRAND} {ADMIN_CONSOLE_LABEL}
                 </span>
             </Link>
 
@@ -198,7 +199,7 @@ function SidebarContent({
                     onClick={onNavigate}
                     className="block rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                 >
-                    Storefront
+                    Suhaag storefront
                 </Link>
                 <button
                     type="button"

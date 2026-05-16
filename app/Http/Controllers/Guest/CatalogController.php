@@ -5,13 +5,31 @@ namespace App\Http\Controllers\Guest;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Gender;
 use App\Models\Product;
+use App\Support\StoreCatalog;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class CatalogController extends Controller
 {
+    public function postGendersList(Request $request)
+    {
+        try {
+            $genders = Gender::query()
+                ->where('is_active', true)
+                ->when(StoreCatalog::womenOnly(), fn ($q) => $q->where('slug', StoreCatalog::womenGenderSlug()))
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']);
+
+            return $this->sendJsonResponse(true, 'Genders fetched successfully.', $genders, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
     public function postBrandsList(Request $request)
     {
         try {
@@ -63,6 +81,11 @@ class CatalogController extends Controller
                 ->orderBy('sort_order')
                 ->orderBy('name');
 
+            $shopSlugs = StoreCatalog::shopCategorySlugs();
+            if (StoreCatalog::womenOnly() && $shopSlugs !== []) {
+                $query->whereIn('slug', $shopSlugs);
+            }
+
             if ($request->filled('keyword')) {
                 $keyword = $request->input('keyword');
                 $query->where(function ($q) use ($keyword) {
@@ -87,6 +110,10 @@ class CatalogController extends Controller
                 'current_page' => ['nullable', 'integer', 'min:1'],
                 'keyword' => ['nullable', 'string'],
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
+                'gender_id' => ['nullable', 'integer', 'exists:genders,id'],
+                'featured_only' => ['nullable', 'boolean'],
                 'status' => ['nullable', 'string', 'in:draft,published,archived'],
             ]);
 
@@ -98,7 +125,17 @@ class CatalogController extends Controller
             $currentPage = $request->input('current_page', 1);
 
             $query = Product::query()
-                ->with(['brand', 'subcategory.category', 'variants']);
+                ->with([
+                    'brand',
+                    'gender',
+                    'subcategory.category',
+                    'variants',
+                    'images' => fn ($q) => $q
+                        ->whereNull('product_variant_id')
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order')
+                        ->limit(1),
+                ]);
 
             if ($request->filled('keyword')) {
                 $keyword = $request->input('keyword');
@@ -113,6 +150,28 @@ class CatalogController extends Controller
                 $query->where('brand_id', $request->input('brand_id'));
             }
 
+            if (StoreCatalog::womenOnly()) {
+                $womenId = StoreCatalog::womenGenderId();
+                if ($womenId) {
+                    $query->where('gender_id', $request->input('gender_id', $womenId));
+                }
+            } elseif ($request->filled('gender_id')) {
+                $query->where('gender_id', $request->input('gender_id'));
+            }
+
+            if ($request->filled('subcategory_id')) {
+                $query->where('subcategory_id', $request->input('subcategory_id'));
+            }
+
+            if ($request->filled('category_id')) {
+                $categoryId = $request->input('category_id');
+                $query->whereHas('subcategory', fn ($q) => $q->where('category_id', $categoryId));
+            }
+
+            if ($request->boolean('featured_only')) {
+                $query->where('is_featured', true);
+            }
+
             if ($request->filled('status')) {
                 $query->where('status', $request->input('status'));
             } else {
@@ -124,6 +183,57 @@ class CatalogController extends Controller
             $products = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
             return $this->sendJsonResponse(true, 'Products fetched successfully.', $products, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postProductShow(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'slug' => ['required_without:product_id', 'string', 'max:255'],
+                'product_id' => ['required_without:slug', 'integer', 'exists:products,id'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $query = Product::query()
+                ->with([
+                    'brand',
+                    'gender',
+                    'subcategory.category',
+                    'variants.images' => fn ($q) => $q
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order'),
+                    'images' => fn ($q) => $q
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order'),
+                ])
+                ->where('status', 'published');
+
+            if (StoreCatalog::womenOnly()) {
+                $womenId = StoreCatalog::womenGenderId();
+                if ($womenId) {
+                    $query->where('gender_id', $womenId);
+                }
+            }
+
+            if ($request->filled('slug')) {
+                $query->where('slug', $request->input('slug'));
+            } else {
+                $query->whereKey($request->input('product_id'));
+            }
+
+            $product = $query->first();
+
+            if (! $product) {
+                return $this->sendJsonResponse(false, 'Product not found.', null, 200);
+            }
+
+            return $this->sendJsonResponse(true, 'Product fetched successfully.', $product, 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }

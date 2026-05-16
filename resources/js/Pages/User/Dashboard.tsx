@@ -1,58 +1,62 @@
-import { storeCard, storeMutedText } from '@/store/storeTheme';
+import { storeCard, storeMutedText, storeSectionEyebrow, storeSectionTitle } from '@/store/storeTheme';
 import UserPanelLayout from '@/Layouts/User/UserPanelLayout';
 import { useAuthUser } from '@/auth/useAuthUser';
+import { catalogUrl } from '@/store/fashionBrand';
 import { Head, Link } from '@inertiajs/react';
 
 export default function Dashboard() {
     const { user } = useAuthUser();
 
     const actionCard =
-        'block rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700';
+        'block border border-stone-200 bg-white p-6 transition hover:border-stone-900 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-stone-400';
 
     return (
         <UserPanelLayout title="Overview">
-            <Head title="My account" />
-            <div className="mx-auto max-w-3xl space-y-6">
+            <Head title="ÉLAN · My account" />
+            <div className="mx-auto max-w-3xl space-y-8">
                 <div className={storeCard}>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        Hello{user ? `, ${user.name}` : ''}
+                    <p className={storeSectionEyebrow}>Your wardrobe</p>
+                    <h2 className={`${storeSectionTitle} mt-2`}>
+                        Hello{user ? `, ${user.name.split(' ')[0]}` : ''}
                     </h2>
-                    <p className={`mt-2 ${storeMutedText}`}>
-                        Manage your profile, track orders, and shop from the storefront or mobile
-                        app with the same account.
+                    <p className={`mt-3 ${storeMutedText}`}>
+                        Track fashion orders, update your profile, and shop new arrivals — all
+                        connected to the same account as our mobile app.
                     </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Link href={route('user.orders.index')} className={actionCard}>
-                        <p className="font-semibold text-slate-900 dark:text-white">Orders</p>
-                        <p className={`mt-1 ${storeMutedText}`}>
-                            Order history, status, and line items
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-500">
+                            Orders
                         </p>
-                        <span className="mt-3 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                            View orders →
-                        </span>
+                        <p className="mt-2 font-display text-xl text-stone-900 dark:text-stone-50">
+                            Order history
+                        </p>
+                        <p className={`mt-2 ${storeMutedText}`}>
+                            Status, delivery, and line items for every purchase.
+                        </p>
                     </Link>
                     <Link href={route('profile.edit')} className={actionCard}>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                            Profile & security
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-500">
+                            Profile
                         </p>
-                        <p className={`mt-1 ${storeMutedText}`}>
-                            Name, email, password, appearance
+                        <p className="mt-2 font-display text-xl text-stone-900 dark:text-stone-50">
+                            Details & security
                         </p>
-                        <span className="mt-3 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                            Open →
-                        </span>
+                        <p className={`mt-2 ${storeMutedText}`}>
+                            Name, email, password, and appearance preferences.
+                        </p>
                     </Link>
-                    <Link href={route('home')} className={`${actionCard} sm:col-span-2`}>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                            Guest store
+                    <Link href={catalogUrl({ featured_only: true })} className={`${actionCard} sm:col-span-2`}>
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-500">
+                            Boutique
                         </p>
-                        <p className={`mt-1 ${storeMutedText}`}>
-                            Browse catalog and cart without admin tools
+                        <p className="mt-2 font-display text-xl text-stone-900 dark:text-stone-50">
+                            Shop new arrivals
                         </p>
-                        <span className="mt-3 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                            Shop →
-                        </span>
+                        <p className={`mt-2 ${storeMutedText}`}>
+                            Browse the latest fashion from the live catalog.
+                        </p>
                     </Link>
                 </div>
             </div>

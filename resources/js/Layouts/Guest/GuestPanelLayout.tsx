@@ -1,9 +1,12 @@
 import CartBadge from '@/Components/CartBadge';
+import FashionAnnouncementBar from '@/Components/store/FashionAnnouncementBar';
+import FashionLogo from '@/Components/store/FashionLogo';
+import StoreFooter from '@/Components/store/StoreFooter';
 import StoreThemeToggle from '@/Components/StoreThemeToggle';
 import AppearanceSync from '@/Components/AppearanceSync';
+import { useWomenStore } from '@/hooks/useWomenStore';
+import { catalogUrl, catalogUrlForCategory } from '@/store/fashionBrand';
 import {
-    storeBrand,
-    storeBrandSub,
     storeBtnPrimary,
     storeHeader,
     storeHeaderInner,
@@ -19,10 +22,9 @@ import { useAuthUser } from '@/auth/useAuthUser';
 import { Link } from '@inertiajs/react';
 import { PropsWithChildren, useState } from 'react';
 
-const navLinks = [
-    { label: 'Home', href: route('home'), routeName: 'home' },
-    { label: 'Browse', href: route('guest.catalog'), routeName: 'guest.catalog' },
-] as const;
+function navClass(active: boolean) {
+    return active ? storeNavActive : storeNavInactive;
+}
 
 export default function GuestPanelLayout({
     children,
@@ -30,60 +32,66 @@ export default function GuestPanelLayout({
 }: PropsWithChildren<{ title?: string }>) {
     const { user } = useAuthUser();
     const [menuOpen, setMenuOpen] = useState(false);
+    const { shopCategories } = useWomenStore();
 
     return (
         <div className={storeShell}>
             <AppearanceSync />
+            <FashionAnnouncementBar />
             <header className={storeHeader}>
                 <div className={storeHeaderInner}>
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <Link href={route('home')} className="min-w-0">
-                            <span className={storeBrand}>Store</span>
-                            <span className={`${storeBrandSub} hidden sm:block`}>
-                                Shop as guest
-                            </span>
-                        </Link>
-                    </div>
+                    <FashionLogo
+                        subline={
+                            user
+                                ? `Welcome, ${user.name.split(' ')[0]}`
+                                : 'Sarees · Kurtas · Tunics'
+                        }
+                    />
 
-                    <nav className="hidden items-center gap-1 md:flex">
-                        {navLinks.map((l) => (
+                    <nav className="hidden items-center gap-5 lg:flex">
+                        <Link
+                            href={route('home')}
+                            className={navClass(route().current('home') === true)}
+                        >
+                            Home
+                        </Link>
+                        {shopCategories.map((cat) => (
                             <Link
-                                key={l.href}
-                                href={l.href}
-                                className={
-                                    route().current(l.routeName)
-                                        ? storeNavActive
-                                        : storeNavInactive
-                                }
+                                key={cat.id}
+                                href={catalogUrlForCategory(cat.id)}
+                                className={navClass(false)}
                             >
-                                {l.label}
+                                {cat.name}
                             </Link>
                         ))}
+                        <Link href={catalogUrl({ featured_only: true })} className={navClass(false)}>
+                            New in
+                        </Link>
                     </nav>
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-3 sm:gap-4">
                         <CartBadge />
                         <StoreThemeToggle />
                         {user ? (
                             <Link href={route('dashboard')} className={storeBtnPrimary}>
-                                My account
+                                Account
                             </Link>
                         ) : (
                             <>
                                 <Link
                                     href={route('login')}
-                                    className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:inline"
+                                    className="hidden text-[11px] font-semibold uppercase tracking-wider text-stone-600 hover:text-stone-900 sm:inline dark:text-stone-400"
                                 >
-                                    Log in
+                                    Sign in
                                 </Link>
                                 <Link href={route('register')} className={storeBtnPrimary}>
-                                    Register
+                                    Join
                                 </Link>
                             </>
                         )}
                         <button
                             type="button"
-                            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="p-2 text-stone-600 lg:hidden dark:text-stone-400"
                             aria-expanded={menuOpen}
                             aria-label="Menu"
                             onClick={() => setMenuOpen((o) => !o)}
@@ -100,36 +108,33 @@ export default function GuestPanelLayout({
                 </div>
 
                 {menuOpen ? (
-                    <nav className="flex flex-col gap-1 border-t border-slate-200 px-4 py-3 md:hidden dark:border-slate-800">
-                        {navLinks.map((l) => (
+                    <nav className="flex flex-col gap-1 border-t border-stone-200 px-4 py-4 lg:hidden dark:border-stone-800">
+                        <Link href={route('home')} onClick={() => setMenuOpen(false)} className={storeNavInactive}>
+                            Home
+                        </Link>
+                        {shopCategories.map((cat) => (
                             <Link
-                                key={l.href}
-                                href={l.href}
-                                onClick={() => setMenuOpen(false)}
-                                className={
-                                    route().current(l.routeName)
-                                        ? storeNavActive
-                                        : storeNavInactive
-                                }
-                            >
-                                {l.label}
-                            </Link>
-                        ))}
-                        {!user ? (
-                            <Link
-                                href={route('login')}
+                                key={cat.id}
+                                href={catalogUrlForCategory(cat.id)}
                                 onClick={() => setMenuOpen(false)}
                                 className={storeNavInactive}
                             >
-                                Log in
+                                {cat.name}
                             </Link>
-                        ) : null}
+                        ))}
                         <Link
-                            href={route('admin.login')}
+                            href={catalogUrl({ featured_only: true })}
                             onClick={() => setMenuOpen(false)}
-                            className="px-3 py-1.5 text-xs text-slate-400"
+                            className={storeNavInactive}
                         >
-                            Admin
+                            New in
+                        </Link>
+                        <Link
+                            href={route('guest.cart')}
+                            onClick={() => setMenuOpen(false)}
+                            className={storeNavInactive}
+                        >
+                            Bag
                         </Link>
                     </nav>
                 ) : null}
@@ -144,6 +149,7 @@ export default function GuestPanelLayout({
             ) : null}
 
             <main className={storeMain}>{children}</main>
+            <StoreFooter />
         </div>
     );
 }

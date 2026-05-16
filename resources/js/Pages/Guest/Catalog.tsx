@@ -1,310 +1,319 @@
-import { cartStore } from '@/api/cartClient';
+import ProductCard from '@/Components/store/ProductCard';
+import { catalogBrandsList, catalogCategoriesList, catalogProductsList } from '@/api/catalogClient';
+import type { CatalogBrand, CatalogCategory, CatalogProduct } from '@/store/catalogTypes';
+import { useWomenStore } from '@/hooks/useWomenStore';
 import {
-    storeBtnPrimary,
-    storeBtnSecondary,
-    storeCard,
+    storeChip,
+    storeChipActive,
     storeErrorBanner,
     storeInput,
     storeMutedText,
     storePaginationBtn,
     storePaginationRow,
+    storeProductGrid,
+    storeLabel,
+    storeSectionEyebrow,
+    storeSectionTitle,
+    storeSidebar,
 } from '@/store/storeTheme';
 import GuestPanelLayout from '@/Layouts/Guest/GuestPanelLayout';
-import { useAuthUser } from '@/auth/useAuthUser';
-import { redirectToLogin } from '@/utils/requireAuth';
-import { Head, Link, router } from '@inertiajs/react';
-import { FormEvent, useEffect, useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 
-type VariantRow = {
-    id: number;
-    sku: string;
-    price: string | number;
-    size?: string | null;
-    color?: string | null;
-    stock_quantity: number;
-    is_default?: boolean;
-};
-
-type ProductRow = {
-    id: number;
-    name: string;
-    slug: string;
-    status: string;
-    is_featured: boolean;
-    brand?: { name: string } | null;
-    variants?: VariantRow[];
-};
-
-type PaginatorPayload = {
-    data: ProductRow[];
+type Paginator = {
+    data: CatalogProduct[];
     current_page: number;
     last_page: number;
+    total?: number;
 };
 
-type ApiListResponse = {
-    success: boolean;
-    message: string;
-    data: PaginatorPayload;
-};
-
-function pickVariant(product: ProductRow): VariantRow | null {
-    const variants = product.variants ?? [];
-    if (variants.length === 0) {
-        return null;
+function readFiltersFromUrl() {
+    if (typeof window === 'undefined') {
+        return { keyword: '', brandId: '', categoryId: '', subcategoryId: '', genderId: '', featuredOnly: false };
     }
+    const p = new URLSearchParams(window.location.search);
 
-    return variants.find((v) => v.is_default) ?? variants[0];
-}
-
-function variantLabel(v: VariantRow): string {
-    const parts = [v.size, v.color].filter(Boolean);
-
-    return parts.length > 0 ? parts.join(' · ') : v.sku;
+    return {
+        keyword: p.get('keyword') ?? '',
+        brandId: p.get('brand_id') ?? '',
+        categoryId: p.get('category_id') ?? '',
+        subcategoryId: p.get('subcategory_id') ?? '',
+        genderId: p.get('gender_id') ?? '',
+        featuredOnly: p.get('featured_only') === 'true',
+    };
 }
 
 export default function Catalog() {
-    const { isLoggedIn } = useAuthUser();
-
-    const [keyword, setKeyword] = useState('');
+    const { womenGenderId, shopCategories, defaultProductFilters } = useWomenStore();
+    const initial = readFiltersFromUrl();
+    const [keyword, setKeyword] = useState(initial.keyword);
+    const [brandId, setBrandId] = useState(initial.brandId);
+    const [categoryId, setCategoryId] = useState(initial.categoryId);
+    const [subcategoryId, setSubcategoryId] = useState(initial.subcategoryId);
+    const [featuredOnly, setFeaturedOnly] = useState(initial.featuredOnly);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [payload, setPayload] = useState<PaginatorPayload | null>(null);
-    const [selectedVariant, setSelectedVariant] = useState<Record<number, number>>({});
-    const [addingId, setAddingId] = useState<number | null>(null);
-    const [toast, setToast] = useState<string | null>(null);
+    const [payload, setPayload] = useState<Paginator | null>(null);
+    const [brands, setBrands] = useState<CatalogBrand[]>([]);
+    const [categories, setCategories] = useState<CatalogCategory[]>([]);
 
-    const load = async (p: number, kw: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await window.axios.post<ApiListResponse>('/api/v1/catalog/products/list', {
-                per_page: 12,
-                current_page: p,
-                keyword: kw || undefined,
-                status: 'published',
-            });
-            if (!res.data.success || !res.data.data) {
-                setError(res.data.message || 'Could not load catalog');
-                setPayload(null);
+    const loadProducts = useCallback(
+        async (p: number) => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await catalogProductsList({
+                    per_page: 12,
+                    current_page: p,
+                    keyword: keyword || undefined,
+                    brand_id: brandId ? Number(brandId) : undefined,
+                    category_id: categoryId ? Number(categoryId) : undefined,
+                    subcategory_id: subcategoryId ? Number(subcategoryId) : undefined,
+                    gender_id: womenGenderId ?? undefined,
+                    featured_only: featuredOnly || undefined,
+                });
+                if (!res.success || !res.data) {
+                    setError(res.message || 'Could not load catalog');
+                    setPayload(null);
 
-                return;
-            }
-            setPayload(res.data.data);
-            const defaults: Record<number, number> = {};
-            for (const product of res.data.data.data) {
-                const v = pickVariant(product);
-                if (v) {
-                    defaults[product.id] = v.id;
+                    return;
                 }
+                setPayload(res.data);
+            } catch {
+                setError('Network error loading catalog.');
+                setPayload(null);
+            } finally {
+                setLoading(false);
             }
-            setSelectedVariant(defaults);
-        } catch {
-            setError('Network error loading catalog.');
-            setPayload(null);
-        } finally {
-            setLoading(false);
-        }
-    };
+        },
+        [keyword, brandId, categoryId, subcategoryId, womenGenderId, featuredOnly, defaultProductFilters],
+    );
 
     useEffect(() => {
-        void load(1, '');
+        void catalogBrandsList().then((brandsRes) => {
+            if (brandsRes.success && brandsRes.data) {
+                setBrands(brandsRes.data.data);
+            }
+        });
     }, []);
+
+    useEffect(() => {
+        if (shopCategories.length > 0) {
+            setCategories(shopCategories);
+        }
+    }, [shopCategories]);
+
+    useEffect(() => {
+        void loadProducts(page);
+    }, [loadProducts, page]);
 
     const onSearch = (e: FormEvent) => {
         e.preventDefault();
         setPage(1);
-        void load(1, keyword);
+        void loadProducts(1);
     };
 
-    const goPage = (p: number) => {
-        setPage(p);
-        void load(p, keyword);
+    const clearFilters = () => {
+        setKeyword('');
+        setBrandId('');
+        setCategoryId('');
+        setSubcategoryId('');
+        setFeaturedOnly(false);
+        setPage(1);
     };
 
-    const addToCart = async (product: ProductRow, goCheckout = false) => {
-        if (!isLoggedIn) {
-            redirectToLogin(goCheckout ? route('guest.cart') : undefined);
-
-            return;
-        }
-
-        const variantId = selectedVariant[product.id] ?? pickVariant(product)?.id;
-        if (!variantId) {
-            setToast('No variant available for this product.');
-
-            return;
-        }
-
-        setAddingId(product.id);
-        setToast(null);
-        try {
-            const res = await cartStore.add(variantId, 1);
-            if (!res.success) {
-                setToast(res.message || 'Could not add to cart.');
-
-                return;
-            }
-            setToast(`${product.name} added to cart.`);
-            if (goCheckout) {
-                router.visit(route('guest.cart'));
-            }
-        } catch {
-            setToast('Could not add to cart.');
-        } finally {
-            setAddingId(null);
-        }
-    };
+    const activeCategory = categories.find((c) => String(c.id) === categoryId);
+    const subcategories = activeCategory?.subcategories ?? [];
 
     return (
-        <GuestPanelLayout title="Browse">
-            <Head title="Store · Browse" />
-            <form onSubmit={onSearch} className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <input
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder="Search products"
-                    className={`${storeInput} max-w-md`}
-                />
-                <button type="submit" className={storeBtnPrimary}>
-                    Search
-                </button>
-            </form>
+        <GuestPanelLayout title="Shop ethnic wear">
+            <Head title="Suhaag · Shop" />
 
-            {toast ? (
-                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
-                    {toast}
-                </div>
-            ) : null}
-
-            {error ? <div className={`mb-4 ${storeErrorBanner}`}>{error}</div> : null}
-
-            {loading ? (
-                <p className={storeMutedText}>Loading products…</p>
-            ) : payload && payload.data.length === 0 ? (
-                <p className={storeMutedText}>No products found. Try another search or seed the database.</p>
-            ) : (
-                <>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {payload?.data.map((product) => {
-                            const variants = product.variants ?? [];
-                            const activeVariantId =
-                                selectedVariant[product.id] ?? pickVariant(product)?.id;
-                            const activeVariant =
-                                variants.find((v) => v.id === activeVariantId) ??
-                                pickVariant(product);
-                            const price = activeVariant?.price;
-                            const outOfStock =
-                                !activeVariant || activeVariant.stock_quantity < 1;
-
-                            return (
-                                <article
-                                    key={product.id}
-                                    className={`${storeCard} flex flex-col`}
+            <div className="flex flex-col gap-8 lg:flex-row">
+                <aside className={`${storeSidebar} w-full lg:w-64`}>
+                    <p className={storeSectionEyebrow}>Refine</p>
+                    <h2 className="mt-1 font-display text-xl text-stone-900 dark:text-stone-50">
+                        Filters
+                    </h2>
+                    <form onSubmit={onSearch} className="mt-6 space-y-5">
+                        <label className="block">
+                            <span className={storeLabel}>Search</span>
+                            <input
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                placeholder="Name or SKU"
+                                className={`${storeInput} mt-1`}
+                            />
+                        </label>
+                        <label className="block">
+                            <span className={storeLabel}>Brand</span>
+                            <select
+                                value={brandId}
+                                onChange={(e) => {
+                                    setBrandId(e.target.value);
+                                    setPage(1);
+                                }}
+                                className={`${storeInput} mt-1`}
+                            >
+                                <option value="">All brands</option>
+                                {brands.map((b) => (
+                                    <option key={b.id} value={b.id}>
+                                        {b.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="block">
+                            <span className={storeLabel}>Category</span>
+                            <select
+                                value={categoryId}
+                                onChange={(e) => {
+                                    setCategoryId(e.target.value);
+                                    setSubcategoryId('');
+                                    setPage(1);
+                                }}
+                                className={`${storeInput} mt-1`}
+                            >
+                                <option value="">All categories</option>
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        {subcategories.length > 0 ? (
+                            <label className="block">
+                                <span className="text-xs font-medium text-slate-500">
+                                    Subcategory
+                                </span>
+                                <select
+                                    value={subcategoryId}
+                                    onChange={(e) => {
+                                        setSubcategoryId(e.target.value);
+                                        setPage(1);
+                                    }}
+                                    className={`${storeInput} mt-1`}
                                 >
-                                    {product.is_featured ? (
-                                        <span className="mb-2 w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                                            Featured
-                                        </span>
-                                    ) : null}
-                                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                                        {product.name}
-                                    </h2>
-                                    {product.brand ? (
-                                        <p className="text-xs font-medium uppercase text-slate-500">
-                                            {product.brand.name}
-                                        </p>
-                                    ) : null}
-                                    {variants.length > 1 ? (
-                                        <label className="mt-3 block">
-                                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                Variant
-                                            </span>
-                                            <select
-                                                value={activeVariantId ?? ''}
-                                                onChange={(e) =>
-                                                    setSelectedVariant((prev) => ({
-                                                        ...prev,
-                                                        [product.id]: Number(e.target.value),
-                                                    }))
-                                                }
-                                                className={`${storeInput} mt-1`}
-                                            >
-                                                {variants.map((v) => (
-                                                    <option key={v.id} value={v.id}>
-                                                        {variantLabel(v)} — {v.price}
-                                                        {v.stock_quantity < 1
-                                                            ? ' (out of stock)'
-                                                            : ''}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                    ) : activeVariant ? (
-                                        <p className="mt-2 text-xs text-slate-500">
-                                            {variantLabel(activeVariant)}
-                                        </p>
-                                    ) : null}
-                                    {price !== undefined ? (
-                                        <p className="mt-4 text-base font-bold text-slate-900 dark:text-white">
-                                            {price} INR
-                                        </p>
-                                    ) : (
-                                        <p className="mt-4 text-sm text-slate-400">
-                                            No variant price
-                                        </p>
-                                    )}
-                                    <div className="mt-auto flex flex-col gap-2 pt-4">
-                                        <button
-                                            type="button"
-                                            disabled={outOfStock || addingId === product.id}
-                                            onClick={() => void addToCart(product, false)}
-                                            className={`${storeBtnPrimary} w-full disabled:opacity-50`}
-                                        >
-                                            {addingId === product.id
-                                                ? 'Adding…'
-                                                : outOfStock
-                                                  ? 'Out of stock'
-                                                  : 'Add to cart'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={outOfStock || addingId === product.id}
-                                            onClick={() => void addToCart(product, true)}
-                                            className={`${storeBtnSecondary} w-full disabled:opacity-50`}
-                                        >
-                                            Buy now
-                                        </button>
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
-                    {payload && payload.last_page > 1 ? (
-                        <div className={storePaginationRow}>
-                            <button
-                                type="button"
-                                disabled={page <= 1}
-                                onClick={() => goPage(page - 1)}
-                                className={storePaginationBtn}
-                            >
-                                Previous
-                            </button>
-                            <span className={storeMutedText}>
-                                Page {payload.current_page} of {payload.last_page}
-                            </span>
-                            <button
-                                type="button"
-                                disabled={page >= payload.last_page}
-                                onClick={() => goPage(page + 1)}
-                                className={storePaginationBtn}
-                            >
-                                Next
-                            </button>
+                                    <option value="">All</option>
+                                    {subcategories.map((s) => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        ) : null}
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={featuredOnly}
+                                onChange={(e) => {
+                                    setFeaturedOnly(e.target.checked);
+                                    setPage(1);
+                                }}
+                                className="rounded border-stone-300"
+                            />
+                            <span className={storeLabel}>New in only</span>
+                        </label>
+                        <button type="submit" className="w-full bg-stone-900 py-3 text-[11px] font-semibold uppercase tracking-widest text-white dark:bg-stone-100 dark:text-stone-900">
+                            Apply
+                        </button>
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="w-full text-sm font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                            Clear filters
+                        </button>
+                    </form>
+                </aside>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div>
+                            <p className={storeSectionEyebrow}>Collection</p>
+                            <h2 className={storeSectionTitle}>
+                                {payload?.total != null
+                                    ? `${payload.total} pieces`
+                                    : 'All fashion'}
+                            </h2>
                         </div>
-                    ) : null}
-                </>
-            )}
+                        {brandId || categoryId || keyword ? (
+                            <button
+                                type="button"
+                                onClick={clearFilters}
+                                className={storeChip}
+                            >
+                                Clear all
+                            </button>
+                        ) : null}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2 lg:hidden">
+                        {categories.slice(0, 6).map((c) => (
+                            <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                    setCategoryId(String(c.id));
+                                    setPage(1);
+                                }}
+                                className={
+                                    String(c.id) === categoryId ? storeChipActive : storeChip
+                                }
+                            >
+                                {c.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {error ? <div className={`mt-4 ${storeErrorBanner}`}>{error}</div> : null}
+
+                    {loading ? (
+                        <p className={`mt-8 ${storeMutedText}`}>Loading products…</p>
+                    ) : payload && payload.data.length === 0 ? (
+                        <p className={`mt-8 ${storeMutedText}`}>
+                            No products match your filters.{' '}
+                            <Link href={route('guest.catalog')} className="font-medium text-indigo-600">
+                                Reset
+                            </Link>
+                        </p>
+                    ) : (
+                        <>
+                            <div className={`mt-6 ${storeProductGrid}`}>
+                                {payload?.data.map((product) => (
+                                    <ProductCard key={product.id} product={product} />
+                                ))}
+                            </div>
+                            {payload && payload.last_page > 1 ? (
+                                <div className={storePaginationRow}>
+                                    <button
+                                        type="button"
+                                        disabled={page <= 1}
+                                        onClick={() => setPage((p) => p - 1)}
+                                        className={storePaginationBtn}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className={storeMutedText}>
+                                        Page {payload.current_page} of {payload.last_page}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={page >= payload.last_page}
+                                        onClick={() => setPage((p) => p + 1)}
+                                        className={storePaginationBtn}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            ) : null}
+                        </>
+                    )}
+                </div>
+            </div>
         </GuestPanelLayout>
     );
 }

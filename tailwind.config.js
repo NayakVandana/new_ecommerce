@@ -12,7 +12,14 @@ export default {
         './resources/js/**/*.ts',
     ],
 
-    // Fonts: Tailwind default `font-sans` = system-ui stack (no paid / CDN webfonts)
+    theme: {
+        extend: {
+            fontFamily: {
+                sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+                display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            },
+        },
+    },
 
     plugins: [forms],
 };

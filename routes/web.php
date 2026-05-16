@@ -35,6 +35,9 @@ Route::get('/', fn () => Inertia::render('Guest/Home'))->name('home');
 
 Route::get('/catalog', fn () => Inertia::render('Guest/Catalog'))->name('guest.catalog');
 
+Route::get('/products/{slug}', fn (string $slug) => Inertia::render('Guest/ProductShow', ['productSlug' => $slug]))
+    ->name('guest.product.show');
+
 Route::get('/cart', fn () => Inertia::render('Guest/Cart'))->name('guest.cart');
 
 Route::get('/welcome', function () {

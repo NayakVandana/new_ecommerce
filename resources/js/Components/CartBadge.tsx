@@ -38,9 +38,9 @@ export default function CartBadge() {
             href={href}
             className={`relative ${isActive ? storeNavActive : storeNavInactive}`}
         >
-            Cart
+            Bag
             {user && count > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center bg-stone-900 px-1 text-[9px] font-bold text-white dark:bg-stone-100 dark:text-stone-900">
                     {count > 99 ? '99+' : count}
                 </span>
             ) : null}

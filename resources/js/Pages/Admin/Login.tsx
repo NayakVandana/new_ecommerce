@@ -1,3 +1,4 @@
+import { ADMIN_BRAND, ADMIN_TAGLINE } from '@/admin/adminBrand';
 import {
     adminErrorBanner,
     adminInput,
@@ -57,31 +58,31 @@ export default function Login() {
 
     return (
         <>
-            <Head title="Admin login" />
+            <Head title={`${ADMIN_BRAND} admin`} />
             <AppearanceSync />
             <div className={`${adminPageGradient} relative flex min-h-screen flex-col lg:flex-row`}>
                 <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
                     <AdminThemeToggle />
                 </div>
                 <div className="relative hidden overflow-hidden lg:flex lg:w-[42%] xl:w-[45%]">
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-900" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-stone-900 to-stone-950" />
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(139,92,246,0.35),transparent_55%)]" />
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(59,130,246,0.2),transparent_50%)]" />
                     <div className="relative flex flex-col justify-between p-12 text-white xl:p-16">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-300/90">
-                                Console
+                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-rose-300/90">
+                                {ADMIN_TAGLINE}
                             </p>
                             <h2 className="mt-4 max-w-md text-4xl font-bold leading-tight tracking-tight xl:text-5xl">
-                                Run your store from one calm dashboard.
+                                Manage sarees, kurtas & tunics in one place.
                             </h2>
                             <p className="mt-6 max-w-sm text-sm leading-relaxed text-slate-300">
-                                Secure access for staff. Catalog, orders, and customer data stay
-                                aligned with what shoppers see on the site.
+                                Add ethnic pieces, update stock, and keep the women&apos;s catalog
+                                in sync with the Suhaag storefront API.
                             </p>
                         </div>
                         <p className="text-xs text-slate-500">
-                            © {new Date().getFullYear()} Store OS
+                            © {new Date().getFullYear()} {ADMIN_BRAND}
                         </p>
                     </div>
                 </div>
