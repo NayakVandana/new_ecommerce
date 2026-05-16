@@ -1,77 +1,149 @@
+import CartBadge from '@/Components/CartBadge';
+import StoreThemeToggle from '@/Components/StoreThemeToggle';
 import AppearanceSync from '@/Components/AppearanceSync';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren } from 'react';
-import { PageProps } from '@/types';
+import {
+    storeBrand,
+    storeBrandSub,
+    storeBtnPrimary,
+    storeHeader,
+    storeHeaderInner,
+    storeMain,
+    storeNavActive,
+    storeNavInactive,
+    storePageTitle,
+    storePageTitleBar,
+    storePageTitleInner,
+    storeShell,
+} from '@/store/storeTheme';
+import { useAuthUser } from '@/auth/useAuthUser';
+import { Link } from '@inertiajs/react';
+import { PropsWithChildren, useState } from 'react';
 
-export default function GuestPanelLayout({ children, title }: PropsWithChildren<{ title?: string }>) {
-    const { auth } = usePage<PageProps>().props;
-    const user = auth.user;
+const navLinks = [
+    { label: 'Home', href: route('home'), routeName: 'home' },
+    { label: 'Browse', href: route('guest.catalog'), routeName: 'guest.catalog' },
+] as const;
 
-    const links = [
-        { label: 'Home', href: route('home'), routeName: 'home' },
-        { label: 'Browse', href: route('guest.catalog'), routeName: 'guest.catalog' },
-        { label: 'Cart', href: route('guest.cart'), routeName: 'guest.cart' },
-    ] as const;
+export default function GuestPanelLayout({
+    children,
+    title,
+}: PropsWithChildren<{ title?: string }>) {
+    const { user } = useAuthUser();
+    const [menuOpen, setMenuOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <div className={storeShell}>
             <AppearanceSync />
-            <header className="border-b border-slate-200 bg-white shadow-sm">
-                <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-                    <div>
-                        <Link href={route('home')} className="text-lg font-bold tracking-tight text-slate-900">
-                            Store
+            <header className={storeHeader}>
+                <div className={storeHeaderInner}>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <Link href={route('home')} className="min-w-0">
+                            <span className={storeBrand}>Store</span>
+                            <span className={`${storeBrandSub} hidden sm:block`}>
+                                Shop as guest
+                            </span>
                         </Link>
-                        <p className="text-xs text-slate-500">Guest panel · browse without signing in</p>
                     </div>
-                    <nav className="flex flex-wrap items-center gap-2">
-                        {links.map((l) => (
+
+                    <nav className="hidden items-center gap-1 md:flex">
+                        {navLinks.map((l) => (
                             <Link
                                 key={l.href}
                                 href={l.href}
-                                className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                                    route().current(l.routeName) ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-                                }`}
+                                className={
+                                    route().current(l.routeName)
+                                        ? storeNavActive
+                                        : storeNavInactive
+                                }
                             >
                                 {l.label}
                             </Link>
                         ))}
                     </nav>
-                    <div className="flex flex-wrap items-center gap-2">
+
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <CartBadge />
+                        <StoreThemeToggle />
                         {user ? (
-                            <Link
-                                href={route('dashboard')}
-                                className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                            >
+                            <Link href={route('dashboard')} className={storeBtnPrimary}>
                                 My account
                             </Link>
                         ) : (
                             <>
-                                <Link href={route('login')} className="text-sm font-medium text-slate-600 hover:text-slate-900">
+                                <Link
+                                    href={route('login')}
+                                    className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:inline"
+                                >
                                     Log in
                                 </Link>
-                                <Link
-                                    href={route('register')}
-                                    className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-                                >
+                                <Link href={route('register')} className={storeBtnPrimary}>
                                     Register
                                 </Link>
                             </>
                         )}
-                        <Link href={route('admin.login')} className="text-xs font-medium text-slate-400 hover:text-slate-600">
-                            Admin
-                        </Link>
+                        <button
+                            type="button"
+                            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden dark:text-slate-400 dark:hover:bg-slate-800"
+                            aria-expanded={menuOpen}
+                            aria-label="Menu"
+                            onClick={() => setMenuOpen((o) => !o)}
+                        >
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                {menuOpen ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                )}
+                            </svg>
+                        </button>
                     </div>
                 </div>
+
+                {menuOpen ? (
+                    <nav className="flex flex-col gap-1 border-t border-slate-200 px-4 py-3 md:hidden dark:border-slate-800">
+                        {navLinks.map((l) => (
+                            <Link
+                                key={l.href}
+                                href={l.href}
+                                onClick={() => setMenuOpen(false)}
+                                className={
+                                    route().current(l.routeName)
+                                        ? storeNavActive
+                                        : storeNavInactive
+                                }
+                            >
+                                {l.label}
+                            </Link>
+                        ))}
+                        {!user ? (
+                            <Link
+                                href={route('login')}
+                                onClick={() => setMenuOpen(false)}
+                                className={storeNavInactive}
+                            >
+                                Log in
+                            </Link>
+                        ) : null}
+                        <Link
+                            href={route('admin.login')}
+                            onClick={() => setMenuOpen(false)}
+                            className="px-3 py-1.5 text-xs text-slate-400"
+                        >
+                            Admin
+                        </Link>
+                    </nav>
+                ) : null}
             </header>
+
             {title ? (
-                <div className="border-b border-slate-100 bg-white">
-                    <div className="mx-auto max-w-6xl px-4 py-4">
-                        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
+                <div className={storePageTitleBar}>
+                    <div className={storePageTitleInner}>
+                        <h1 className={storePageTitle}>{title}</h1>
                     </div>
                 </div>
             ) : null}
-            <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+
+            <main className={storeMain}>{children}</main>
         </div>
     );
 }

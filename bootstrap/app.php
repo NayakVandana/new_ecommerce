@@ -29,8 +29,6 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        $middleware->statefulApi();
-
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
         ]);

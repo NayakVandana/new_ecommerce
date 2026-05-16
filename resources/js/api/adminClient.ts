@@ -1,15 +1,10 @@
+import {
+    getAdminApiToken,
+    setAdminApiToken,
+} from '@/auth/authToken';
 import axios from 'axios';
 
-export const ADMIN_API_TOKEN_KEY = 'admin_api_token';
-
-/**
- * Sanctum `statefulApi()` runs CSRF on /api for first-party hosts. Keep the
- * XSRF-TOKEN cookie aligned with the session (e.g. after `session()->regenerate()`
- * in admin session bootstrap).
- */
-async function refreshSanctumCsrfCookie(): Promise<void> {
-    await axios.get('/sanctum/csrf-cookie');
-}
+export { getAdminApiToken, setAdminApiToken };
 
 export type AdminApiEnvelope<T> = {
     success: boolean;
@@ -27,60 +22,39 @@ export type LaravelPaginator<T> = {
     to: number | null;
 };
 
-export function setAdminApiToken(token: string | null): void {
-    if (token === null || token === '') {
-        sessionStorage.removeItem(ADMIN_API_TOKEN_KEY);
+function adminHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+        Accept: 'application/json',
+    };
 
-        return;
+    const token = getAdminApiToken();
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
     }
-    sessionStorage.setItem(ADMIN_API_TOKEN_KEY, token);
-}
 
-export function getAdminApiToken(): string | null {
-    return sessionStorage.getItem(ADMIN_API_TOKEN_KEY);
+    return headers;
 }
 
 /**
- * Authenticated admin API calls — uses Bearer token (no session on /api routes).
+ * Admin API — Bearer token only (no session / CSRF).
  */
 export async function adminApiPost<T>(
     path: string,
     data: Record<string, unknown> = {},
 ): Promise<T> {
-    await refreshSanctumCsrfCookie();
-
-    const token = getAdminApiToken();
-    const headers: Record<string, string> = {
-        Accept: 'application/json',
-    };
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-
-    const res = await axios.post<T>(`/api/v1/admin${path}`, data, { headers });
+    const res = await axios.post<T>(`/api/v1/admin${path}`, data, {
+        headers: adminHeaders(),
+    });
 
     return res.data;
 }
 
-/**
- * Multipart admin API (e.g. media upload). Do not set Content-Type manually.
- */
 export async function adminApiPostMultipart<T>(
     path: string,
     formData: FormData,
 ): Promise<T> {
-    await refreshSanctumCsrfCookie();
-
-    const token = getAdminApiToken();
-    const headers: Record<string, string> = {
-        Accept: 'application/json',
-    };
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-
     const res = await axios.post<T>(`/api/v1/admin${path}`, formData, {
-        headers,
+        headers: adminHeaders(),
     });
 
     return res.data;

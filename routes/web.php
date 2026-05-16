@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminWebSessionController;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -48,52 +46,47 @@ Route::get('/welcome', function () {
     ]);
 })->name('welcome');
 
-Route::get('/dashboard', fn () => Inertia::render('User/Dashboard'))
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::get('/dashboard', fn () => Inertia::render('User/Dashboard'))->name('dashboard');
 
-Route::get('/profile', function () {
-    return Inertia::render('User/Profile/Edit', [
-        'mustVerifyEmail' => request()->user() instanceof MustVerifyEmail,
-        'status' => session('status'),
-    ]);
-})->middleware('auth')->name('profile.edit');
+Route::get('/profile', fn () => Inertia::render('User/Profile/Edit', [
+    'mustVerifyEmail' => false,
+    'status' => null,
+]))->name('profile.edit');
 
-Route::post('/admin/session/bootstrap', [AdminWebSessionController::class, 'store'])
-    ->name('admin.session.bootstrap');
-Route::post('/admin/session/logout', [AdminWebSessionController::class, 'destroy'])
-    ->middleware('auth')
-    ->name('admin.session.logout');
+Route::prefix('account')->name('user.')->group(function () {
+    Route::get('/orders', fn () => Inertia::render('User/Orders/Index'))->name('orders.index');
+    Route::get('/orders/{id}', fn (int $id) => Inertia::render('User/Orders/Show', ['orderId' => $id]))
+        ->whereNumber('id')
+        ->name('orders.show');
+});
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', fn () => Inertia::render('Admin/Login'))->name('login');
 
-    Route::middleware(['auth', 'admin'])->group(function () {
-        Route::get('/', fn () => Inertia::render('Admin/Dashboard'))->name('dashboard');
+    Route::get('/', fn () => Inertia::render('Admin/Dashboard'))->name('dashboard');
 
-        Route::get('brands', fn () => Inertia::render('Admin/Brands/Index'))->name('brands.index');
-        Route::get('brands/create', fn () => Inertia::render('Admin/Brands/Form', ['brandId' => null]))
-            ->name('brands.create');
-        Route::get('brands/{id}/edit', fn (int $id) => Inertia::render('Admin/Brands/Form', ['brandId' => $id]))
-            ->whereNumber('id')
-            ->name('brands.edit');
+    Route::get('brands', fn () => Inertia::render('Admin/Brands/Index'))->name('brands.index');
+    Route::get('brands/create', fn () => Inertia::render('Admin/Brands/Form', ['brandId' => null]))
+        ->name('brands.create');
+    Route::get('brands/{id}/edit', fn (int $id) => Inertia::render('Admin/Brands/Form', ['brandId' => $id]))
+        ->whereNumber('id')
+        ->name('brands.edit');
 
-        Route::get('categories', fn () => Inertia::render('Admin/Categories/Index'))->name('categories.index');
-        Route::get('categories/create', fn () => Inertia::render('Admin/Categories/Form', ['categoryId' => null]))
-            ->name('categories.create');
-        Route::get('categories/{id}/edit', fn (int $id) => Inertia::render('Admin/Categories/Form', ['categoryId' => $id]))
-            ->whereNumber('id')
-            ->name('categories.edit');
+    Route::get('categories', fn () => Inertia::render('Admin/Categories/Index'))->name('categories.index');
+    Route::get('categories/create', fn () => Inertia::render('Admin/Categories/Form', ['categoryId' => null]))
+        ->name('categories.create');
+    Route::get('categories/{id}/edit', fn (int $id) => Inertia::render('Admin/Categories/Form', ['categoryId' => $id]))
+        ->whereNumber('id')
+        ->name('categories.edit');
 
-        Route::get('users', fn () => Inertia::render('Admin/Users/Index'))->name('users.index');
+    Route::get('users', fn () => Inertia::render('Admin/Users/Index'))->name('users.index');
 
-        Route::get('products', fn () => Inertia::render('Admin/Products/Index'))->name('products.index');
-        Route::get('products/create', fn () => Inertia::render('Admin/Products/Form', ['productId' => null]))
-            ->name('products.create');
-        Route::get('products/{id}/edit', fn (int $id) => Inertia::render('Admin/Products/Form', ['productId' => $id]))
-            ->whereNumber('id')
-            ->name('products.edit');
-    });
+    Route::get('products', fn () => Inertia::render('Admin/Products/Index'))->name('products.index');
+    Route::get('products/create', fn () => Inertia::render('Admin/Products/Form', ['productId' => null]))
+        ->name('products.create');
+    Route::get('products/{id}/edit', fn (int $id) => Inertia::render('Admin/Products/Form', ['productId' => $id]))
+        ->whereNumber('id')
+        ->name('products.edit');
 });
 
 require __DIR__.'/auth.php';

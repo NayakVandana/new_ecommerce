@@ -5,10 +5,9 @@ import {
 import type { AppearancePreference } from '@/utils/appearance';
 import { applyAppearancePreference } from '@/utils/appearance';
 import { Transition } from '@headlessui/react';
-import { router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
-
+import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import type { User } from '@/types';
+import { useEffect, useState } from 'react';
 
 const OPTIONS: {
     value: AppearancePreference;
@@ -37,7 +36,7 @@ export default function UpdateAppearanceSettingsForm({
 }: {
     className?: string;
 }) {
-    const user = usePage().props.auth.user as User | null;
+    const { user, refresh } = useAuthUser();
 
     const [preference, setPreference] = useState<AppearancePreference>(
         user?.theme_preference ?? 'system',
@@ -76,7 +75,8 @@ export default function UpdateAppearanceSettingsForm({
 
             if (res.success) {
                 setRecentlySuccessful(true);
-                router.reload({ only: ['auth'] });
+                clearAuthUserCache();
+                await refresh();
                 window.setTimeout(() => setRecentlySuccessful(false), 2000);
             } else {
                 applyAppearancePreference(previous);

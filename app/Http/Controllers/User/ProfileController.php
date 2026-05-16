@@ -7,7 +7,6 @@ use App\Models\User;
 use Exception;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -120,12 +119,8 @@ class ProfileController extends Controller
 
             $user = $request->user();
 
-            Auth::logout();
-
+            $user->tokens()->delete();
             $user->delete();
-
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
 
             return $this->sendJsonResponse(true, 'Account deleted successfully.', null, 200);
         } catch (Exception $e) {

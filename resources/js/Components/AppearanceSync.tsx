@@ -1,26 +1,23 @@
+import { useAuthUser } from '@/auth/useAuthUser';
 import {
     applyAppearancePreference,
     resolveAppearancePreference,
+    readStoredAppearance,
 } from '@/utils/appearance';
-import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 
-import type { PageProps } from '@/types';
-
 /**
- * Keeps the document theme in sync when auth props change (e.g. after login / profile update).
+ * Keeps the document theme in sync (token user profile or local storage).
  */
 export default function AppearanceSync() {
-    const { auth, appearance } = usePage<PageProps<{ appearance?: string | null }>>()
-        .props;
-    const user = auth?.user;
+    const { user } = useAuthUser();
 
     useEffect(() => {
         const pref = resolveAppearancePreference(
-            user?.theme_preference ?? appearance,
+            user?.theme_preference ?? readStoredAppearance(),
         );
         applyAppearancePreference(pref);
-    }, [user, user?.theme_preference, appearance]);
+    }, [user, user?.theme_preference]);
 
     return null;
 }

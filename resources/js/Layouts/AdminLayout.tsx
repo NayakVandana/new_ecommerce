@@ -1,4 +1,5 @@
 import AdminThemeToggle from '@/admin/AdminThemeToggle';
+import AdminRequireToken from '@/auth/AdminRequireToken';
 import AppearanceSync from '@/Components/AppearanceSync';
 import {
     adminLayoutHeader,
@@ -11,7 +12,6 @@ import {
     adminPageTitle,
 } from '@/admin/adminTheme';
 import { adminApiPost, setAdminApiToken } from '@/api/adminClient';
-import axios from 'axios';
 import { Link, router } from '@inertiajs/react';
 import { PropsWithChildren, useEffect, useState, type ComponentType } from 'react';
 
@@ -225,8 +225,6 @@ function AdminLayout({
         setLoggingOut(true);
         try {
             await adminApiPost('/auth/logout', {});
-            await axios.get('/sanctum/csrf-cookie');
-            await axios.post(route('admin.session.logout'));
         } finally {
             setAdminApiToken(null);
             router.visit(route('admin.login'));
@@ -246,6 +244,7 @@ function AdminLayout({
 
     return (
         <div className={adminLayoutShell}>
+            <AdminRequireToken />
             <AppearanceSync />
 
             {mobileOpen ? (

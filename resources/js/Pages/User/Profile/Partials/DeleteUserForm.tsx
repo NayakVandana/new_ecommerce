@@ -4,7 +4,10 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import { setUserApiToken } from '@/auth/authToken';
+import { clearAuthUserCache } from '@/auth/useAuthUser';
 import { type UserApiEnvelope, userApiPost } from '@/api/userClient';
+import { router } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
 
 export default function DeleteUserForm({
@@ -32,7 +35,10 @@ export default function DeleteUserForm({
                 { password },
             );
             if (res.success) {
-                window.location.href = '/';
+                setUserApiToken(null);
+                clearAuthUserCache();
+                router.visit(route('home'));
+
                 return;
             }
             if (

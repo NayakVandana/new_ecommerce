@@ -5,10 +5,7 @@ import {
     adminPageGradient,
     adminPrimaryBtn,
 } from '@/admin/adminTheme';
-import {
-    type AdminApiEnvelope,
-    setAdminApiToken,
-} from '@/api/adminClient';
+import { type AdminApiEnvelope, setAdminApiToken } from '@/api/adminClient';
 import AdminThemeToggle from '@/admin/AdminThemeToggle';
 import AppearanceSync from '@/Components/AppearanceSync';
 import axios from 'axios';
@@ -49,11 +46,6 @@ export default function Login() {
             }
 
             setAdminApiToken(body.data.token);
-
-            await axios.post(route('admin.session.bootstrap'), {
-                token: body.data.token,
-            });
-            await axios.get('/sanctum/csrf-cookie');
 
             router.visit(route('admin.dashboard'));
         } catch {

@@ -17,7 +17,7 @@ const OPTIONS: { value: AppearancePreference; label: string }[] = [
     { value: 'system', label: 'System' },
 ];
 
-export default function AdminThemeToggle() {
+export default function StoreThemeToggle() {
     const { user, refresh } = useAuthUser();
     const [value, setValue] = useState<AppearancePreference>(() =>
         readStoredAppearance(),
@@ -62,29 +62,25 @@ export default function AdminThemeToggle() {
 
     return (
         <div
-            className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
+            className="flex rounded-full border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
             role="group"
             aria-label="Theme"
         >
-            {OPTIONS.map((opt) => {
-                const active = value === opt.value;
-
-                return (
-                    <button
-                        key={opt.value}
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void select(opt.value)}
-                        className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                            active
-                                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                        } disabled:opacity-50`}
-                    >
-                        {opt.label}
-                    </button>
-                );
-            })}
+            {OPTIONS.map((opt) => (
+                <button
+                    key={opt.value}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void select(opt.value)}
+                    className={`rounded-full px-2 py-1 text-xs font-medium transition sm:px-2.5 ${
+                        value === opt.value
+                            ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                >
+                    {opt.label}
+                </button>
+            ))}
         </div>
     );
 }

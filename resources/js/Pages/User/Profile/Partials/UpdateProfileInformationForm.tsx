@@ -4,8 +4,9 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { type UserApiEnvelope, userApiPost } from '@/api/userClient';
 import { Transition } from '@headlessui/react';
-import { Link, router, usePage } from '@inertiajs/react';
-import { FormEventHandler, useState } from 'react';
+import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
+import { Link } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useState } from 'react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -16,10 +17,15 @@ export default function UpdateProfileInformation({
     status?: string;
     className?: string;
 }) {
-    const user = usePage().props.auth.user;
+    const { user, refresh } = useAuthUser();
 
     const [name, setName] = useState(user?.name ?? '');
     const [email, setEmail] = useState(user?.email ?? '');
+
+    useEffect(() => {
+        setName(user?.name ?? '');
+        setEmail(user?.email ?? '');
+    }, [user]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [processing, setProcessing] = useState(false);
     const [recentlySuccessful, setRecentlySuccessful] = useState(false);
@@ -38,7 +44,8 @@ export default function UpdateProfileInformation({
             );
             if (res.success) {
                 setRecentlySuccessful(true);
-                router.reload({ only: ['auth'] });
+                clearAuthUserCache();
+                await refresh();
                 window.setTimeout(() => setRecentlySuccessful(false), 2500);
             } else if (
                 res.data &&
