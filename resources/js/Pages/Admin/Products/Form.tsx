@@ -26,6 +26,7 @@ import {
     isCustomFashionSize,
     normalizeVariantSizeForApi,
 } from '@/constants/fashionSizes';
+import { VARIANT_COLOR_PRESET_SWATCHES, VARIANT_PRESET_HEX_SET } from '@/constants/variantColorPresets';
 import {
     colorPickerInputValue,
     isHexColorString,
@@ -495,6 +496,18 @@ export default function Form() {
         );
     };
 
+    const applyVariantColorHex = (variantIndex: number, hex: string) => {
+        const normalized = normalizeHexColor6(hex);
+        if (!normalized) {
+            return;
+        }
+        setVariants((rows) =>
+            rows.map((r, i) =>
+                i === variantIndex ? { ...r, color_hex: normalized } : r,
+            ),
+        );
+    };
+
     const submit = async (e: FormEvent) => {
         e.preventDefault();
         setProcessing(true);
@@ -867,9 +880,11 @@ export default function Form() {
                                 At least one variant (SKU + price). Mark one as
                                 default for storefront pricing. Size uses a
                                 fashion list (letter, EU numeric, one size); pick
-                                “Other” for custom values. Color: use the picker
-                                for hex or type a name (e.g. Navy). Optional
-                                barcode per row.
+                                “Other” for custom values. Color: optional name
+                                plus hex — presets show a violet ring when active;
+                                custom colors (picker or any hex not in the list)
+                                show a green ring on the picker. Optional barcode per
+                                row.
                             </p>
                             <div className="mt-4 space-y-4">
                                 {variants.map((row, index) => (
@@ -1138,53 +1153,150 @@ export default function Form() {
                                                 >
                                                     Color code (hex)
                                                 </label>
-                                                <div className="mt-1 flex flex-wrap items-center gap-3">
-                                                    <input
-                                                        type="color"
-                                                        aria-label="Color picker"
-                                                        title="Pick hex"
-                                                        className="h-10 w-14 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-white p-0 shadow-sm dark:border-slate-600 dark:bg-slate-900 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-moz-color-swatch]:rounded-md"
-                                                        value={colorPickerInputValue(
-                                                            row.color_hex,
-                                                        )}
-                                                        onChange={(e) =>
-                                                            setVariants(
-                                                                (rows) =>
-                                                                    rows.map(
-                                                                        (
-                                                                            r,
-                                                                            i,
-                                                                        ) =>
-                                                                            i ===
-                                                                            index
-                                                                                ? {
-                                                                                      ...r,
-                                                                                      color_hex:
-                                                                                          e
-                                                                                              .target
-                                                                                              .value.toLowerCase(),
-                                                                                  }
-                                                                                : r,
-                                                                    ),
-                                                            )
-                                                        }
-                                                    />
-                                                    {isHexColorString(
-                                                        row.color_hex,
-                                                    ) ? (
-                                                        <span
-                                                            className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 shadow-inner dark:border-slate-600"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    normalizeHexColor6(
+                                                <p
+                                                    className={`mt-0.5 ${adminMutedText}`}
+                                                >
+                                                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                                                        Presets
+                                                    </span>{' '}
+                                                    use a violet ring when active.{' '}
+                                                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                                                        Custom
+                                                    </span>{' '}
+                                                    uses a green ring when the hex
+                                                    is set and not one of the presets;
+                                                    the dashed picker is idle when a
+                                                    preset is selected or hex is
+                                                    empty.
+                                                </p>
+                                                <div className="mt-2 space-y-3">
+                                                    <div>
+                                                        <p
+                                                            className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300"
+                                                        >
+                                                            Presets
+                                                        </p>
+                                                        <div
+                                                            className="flex flex-wrap items-center gap-2"
+                                                            role="group"
+                                                            aria-label="Preset colors"
+                                                        >
+                                                            {VARIANT_COLOR_PRESET_SWATCHES.map(
+                                                                ({
+                                                                    hex,
+                                                                    label,
+                                                                }) => {
+                                                                    const current =
+                                                                        normalizeHexColor6(
+                                                                            row.color_hex,
+                                                                        );
+                                                                    const selected =
+                                                                        current ===
+                                                                        hex;
+                                                                    const isWhite =
+                                                                        hex ===
+                                                                        '#ffffff';
+
+                                                                    return (
+                                                                        <button
+                                                                            key={
+                                                                                hex
+                                                                            }
+                                                                            type="button"
+                                                                            title={
+                                                                                label
+                                                                            }
+                                                                            aria-label={`${label} ${hex}`}
+                                                                            aria-pressed={
+                                                                                selected
+                                                                            }
+                                                                            onClick={() =>
+                                                                                applyVariantColorHex(
+                                                                                    index,
+                                                                                    hex,
+                                                                                )
+                                                                            }
+                                                                            className={`h-9 w-9 shrink-0 rounded-full border-2 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
+                                                                                selected
+                                                                                    ? 'border-violet-600 ring-2 ring-violet-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
+                                                                                    : isWhite
+                                                                                      ? 'border-slate-300 dark:border-slate-500'
+                                                                                      : 'border-slate-200/80 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-400'
+                                                                            }`}
+                                                                            style={{
+                                                                                backgroundColor:
+                                                                                    hex,
+                                                                            }}
+                                                                        />
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p
+                                                            className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300"
+                                                        >
+                                                            Custom (picker)
+                                                        </p>
+                                                        {(() => {
+                                                            const currentHex =
+                                                                normalizeHexColor6(
+                                                                    row.color_hex,
+                                                                );
+                                                            const customActive =
+                                                                currentHex !==
+                                                                    null &&
+                                                                !VARIANT_PRESET_HEX_SET.has(
+                                                                    currentHex,
+                                                                );
+
+                                                            return (
+                                                                <input
+                                                                    type="color"
+                                                                    aria-label="Custom color picker"
+                                                                    title="Pick a custom color"
+                                                                    value={colorPickerInputValue(
                                                                         row.color_hex,
-                                                                    ) ?? undefined,
-                                                            }}
-                                                            title="Preview"
-                                                            aria-hidden
-                                                        />
-                                                    ) : null}
+                                                                    )}
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setVariants(
+                                                                            (
+                                                                                rows,
+                                                                            ) =>
+                                                                                rows.map(
+                                                                                    (
+                                                                                        r,
+                                                                                        i,
+                                                                                    ) =>
+                                                                                        i ===
+                                                                                        index
+                                                                                            ? {
+                                                                                                  ...r,
+                                                                                                  color_hex:
+                                                                                                      e
+                                                                                                          .target
+                                                                                                          .value.toLowerCase(),
+                                                                                              }
+                                                                                            : r,
+                                                                                ),
+                                                                        )
+                                                                    }
+                                                                    className={`h-9 w-9 shrink-0 cursor-pointer appearance-none overflow-hidden rounded-full border-2 p-0 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 ${
+                                                                        customActive
+                                                                            ? 'border-solid border-emerald-600 ring-2 ring-emerald-500/70 ring-offset-2 ring-offset-white dark:border-emerald-500 dark:ring-emerald-400/50 dark:ring-offset-slate-900'
+                                                                            : 'border-dashed border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-emerald-50/80 dark:border-slate-600 dark:bg-slate-800/80 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30'
+                                                                    }`}
+                                                                />
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 flex flex-wrap items-center gap-3">
                                                     <input
+                                                        id={`variant-color-hex-${index}`}
                                                         value={row.color_hex}
                                                         onChange={(e) =>
                                                             setVariants(
@@ -1214,9 +1326,9 @@ export default function Form() {
                                                 <p
                                                     className={`mt-1.5 ${adminMutedText}`}
                                                 >
-                                                    Both color name and hex are
-                                                    saved. Picker and hex field
-                                                    stay in sync with the code.
+                                                    Color name and hex are both
+                                                    saved when you submit the
+                                                    product.
                                                 </p>
                                             </div>
                                             <div>
