@@ -9,6 +9,7 @@ import {
     type AdminApiEnvelope,
     setAdminApiToken,
 } from '@/api/adminClient';
+import AdminThemeToggle from '@/admin/AdminThemeToggle';
 import AppearanceSync from '@/Components/AppearanceSync';
 import axios from 'axios';
 import { Head, Link, router } from '@inertiajs/react';
@@ -66,9 +67,10 @@ export default function Login() {
         <>
             <Head title="Admin login" />
             <AppearanceSync />
-            <div
-                className={`${adminPageGradient} flex min-h-screen flex-col lg:flex-row`}
-            >
+            <div className={`${adminPageGradient} relative flex min-h-screen flex-col lg:flex-row`}>
+                <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+                    <AdminThemeToggle />
+                </div>
                 <div className="relative hidden overflow-hidden lg:flex lg:w-[42%] xl:w-[45%]">
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-900" />
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(139,92,246,0.35),transparent_55%)]" />

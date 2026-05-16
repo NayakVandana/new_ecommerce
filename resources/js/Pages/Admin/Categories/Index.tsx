@@ -8,9 +8,14 @@ import {
     adminListPageWrap,
     adminMutedText,
     adminPaginationBtn,
+    adminPaginationRow,
     adminTable,
+    adminTableActionLink,
+    adminTableActions,
+    adminTableCellHiddenMd,
     adminTableCellHiddenSm,
     adminTableHead,
+    adminTableMobileMeta,
     adminTableRowHover,
     adminTableTd,
     adminTableTdMuted,
@@ -115,7 +120,6 @@ export default function Index() {
             <AdminLayout heading="Categories">
                 <div className={adminListPageWrap}>
                     <AdminListToolbar
-                        description="Top-level groups and subcategory counts. Search filters by name or slug."
                         addHref={route('admin.categories.create')}
                         addLabel="Add category"
                         searchPlaceholder="Search categories…"
@@ -134,16 +138,22 @@ export default function Index() {
                                     >
                                         Slug
                                     </th>
-                                    <th className={adminTableTh}>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenMd}`}
+                                    >
                                         Subcategories
                                     </th>
-                                    <th className={adminTableTh}>Active</th>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenMd}`}
+                                    >
+                                        Active
+                                    </th>
                                     <th className={`${adminTableTh} text-right`}>
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/80">
+                            <tbody>
                                 {loading && (
                                     <tr>
                                         <td
@@ -160,10 +170,26 @@ export default function Index() {
                                             key={row.id}
                                             className={adminTableRowHover}
                                         >
-                                            <td
-                                                className={`${adminTableTd} ${adminTableTdStrong}`}
-                                            >
-                                                {row.name}
+                                            <td className={adminTableTd}>
+                                                <div
+                                                    className={adminTableTdStrong}
+                                                >
+                                                    {row.name}
+                                                </div>
+                                                <p
+                                                    className={`${adminTableMobileMeta} md:hidden`}
+                                                >
+                                                    {row.slug}
+                                                </p>
+                                                <p
+                                                    className={`${adminTableMobileMeta} md:hidden`}
+                                                >
+                                                    {row.subcategories_count}{' '}
+                                                    subcategories
+                                                    {row.is_active
+                                                        ? ' · Active'
+                                                        : ' · Inactive'}
+                                                </p>
                                             </td>
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenSm}`}
@@ -171,7 +197,7 @@ export default function Index() {
                                                 {row.slug}
                                             </td>
                                             <td
-                                                className={`${adminTableTd} ${adminTableTdMuted}`}
+                                                className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenMd}`}
                                             >
                                                 {row.subcategories_count}
                                                 {row.subcategories &&
@@ -187,7 +213,9 @@ export default function Index() {
                                                         </span>
                                                     )}
                                             </td>
-                                            <td className={adminTableTd}>
+                                            <td
+                                                className={`${adminTableTd} ${adminTableCellHiddenMd}`}
+                                            >
                                                 {row.is_active ? (
                                                     <span
                                                         className={adminBadgeYes}
@@ -202,27 +230,31 @@ export default function Index() {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td
-                                                className={`${adminTableTd} text-right text-sm`}
-                                            >
-                                                <Link
-                                                    href={route(
-                                                        'admin.categories.edit',
-                                                        row.id,
-                                                    )}
-                                                    className={adminLinkAction}
+                                            <td className={adminTableTd}>
+                                                <div
+                                                    className={adminTableActions}
                                                 >
-                                                    Edit
-                                                </Link>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        void destroy(row.id)
-                                                    }
-                                                    className={`ml-3 inline-flex rounded-lg px-1.5 py-0.5 transition hover:bg-red-50 dark:hover:bg-red-950/40 ${adminDangerText}`}
-                                                >
-                                                    Delete
-                                                </button>
+                                                    <Link
+                                                        href={route(
+                                                            'admin.categories.edit',
+                                                            row.id,
+                                                        )}
+                                                        className={`${adminLinkAction} ${adminTableActionLink}`}
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            void destroy(
+                                                                row.id,
+                                                            )
+                                                        }
+                                                        className={`${adminDangerText} ${adminTableActionLink} hover:bg-red-50 dark:hover:bg-red-950/40`}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -242,7 +274,7 @@ export default function Index() {
                         </table>
                     </div>
                     {paginator && paginator.last_page > 1 && (
-                        <div className="mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className={adminPaginationRow}>
                             <button
                                 type="button"
                                 disabled={page <= 1}

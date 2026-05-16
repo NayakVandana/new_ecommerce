@@ -13,4 +13,6 @@ export type PageProps<
     auth: {
         user: User | null;
     };
+    /** Logged-in user theme (refreshed each request). */
+    appearance?: 'light' | 'dark' | 'system' | null;
 };

@@ -28,6 +28,22 @@ export function resolveInitialAppearance(): AppearancePreference {
         return fromServer;
     }
 
+    return readStoredAppearance();
+}
+
+/** Prefer explicit user/theme prop, then server boot, then localStorage. */
+export function resolveAppearancePreference(
+    preferred?: string | null,
+): AppearancePreference {
+    const fromPreferred = parseAppearance(preferred);
+    if (fromPreferred) {
+        return fromPreferred;
+    }
+
+    return resolveInitialAppearance();
+}
+
+export function readStoredAppearance(): AppearancePreference {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
 

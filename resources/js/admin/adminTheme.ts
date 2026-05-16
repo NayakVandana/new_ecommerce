@@ -1,7 +1,44 @@
 /** Shared Tailwind classes — admin UI (light/dark, modern styling). */
 
+export const adminLayoutShell =
+    'min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100';
+
+export const adminLayoutSidebar =
+    'border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900';
+
+export const adminLayoutHeader =
+    'sticky top-0 z-30 flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-900/95';
+
+export const adminLayoutMain =
+    'flex w-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8 lg:py-8';
+
+export const adminPageTitle =
+    'mb-4 text-xl font-semibold tracking-tight text-slate-900 sm:mb-6 sm:text-2xl dark:text-white';
+
+export const adminMobilePageTitle =
+    'min-w-0 flex-1 truncate text-lg font-semibold text-slate-900 dark:text-white';
+
+export const adminNavActive =
+    'flex min-h-11 items-center gap-2.5 rounded-lg bg-slate-100 px-3 py-2.5 text-sm font-medium text-slate-900 dark:bg-slate-800 dark:text-white';
+
+export const adminNavInactive =
+    'flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-white';
+
+/** @deprecated flat nav — unused */
+export const adminNavSectionLabel =
+    'px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500';
+
+/** @deprecated flat nav — unused */
+export const adminNavSubActive =
+    'block rounded-lg py-2 pl-10 pr-3 text-sm font-semibold text-violet-700 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300';
+
+/** @deprecated flat nav — unused */
+export const adminNavSubInactive =
+    'block rounded-lg py-2 pl-10 pr-3 text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200';
+
+/** @deprecated use adminLayoutShell — kept for login page */
 export const adminPageGradient =
-    'min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/50 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/40';
+    'min-h-screen bg-slate-100 dark:bg-slate-950';
 
 export const adminInput =
     'mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 shadow-sm placeholder:text-slate-400 transition-colors focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-violet-400 dark:focus:ring-violet-400/25';
@@ -13,20 +50,19 @@ export const adminLabel =
 export const adminFieldError =
     'mt-1 block text-sm font-normal leading-snug text-red-600 dark:text-red-400';
 
-/** Narrow admin forms — centers on large screens, full width on mobile */
+/** Narrow admin forms (brand, etc.) */
 export const adminFormPageWrap =
-    'mx-auto w-full max-w-xl space-y-6 lg:max-w-2xl';
+    'w-full max-w-2xl space-y-4 sm:space-y-6';
 
-/** Wide stacks (product form, category + subcategories) */
-export const adminStackPageWrap =
-    'mx-auto w-full max-w-3xl space-y-6 xl:max-w-4xl';
+/** Wide stacks (category + subcategories) */
+export const adminStackPageWrap = 'w-full space-y-6';
 
-/** Product create/edit — room for sidebar + variant cards */
+/** Product create/edit — full main area width */
 export const adminProductPageWrap =
-    'mx-auto w-full max-w-6xl space-y-6 pb-10';
+    'w-full space-y-4 pb-8 sm:space-y-6 sm:pb-10';
 
 export const adminFormSection =
-    'rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:border-slate-700/80 dark:bg-slate-900/80 dark:ring-white/5';
+    'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900';
 
 export const adminFormSectionTitle =
     'text-base font-semibold tracking-tight text-slate-900 dark:text-white';
@@ -59,31 +95,42 @@ export const adminCancelBtn =
     'rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
 
 export const adminPrimaryBtn =
-    'inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 via-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold !text-white shadow-lg shadow-violet-600/35 ring-2 ring-violet-800/25 transition hover:from-violet-500 hover:via-violet-500 hover:to-indigo-500 hover:shadow-xl hover:shadow-violet-600/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 disabled:opacity-50 visited:!text-white dark:shadow-violet-900/50 dark:ring-violet-400/20';
+    'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:opacity-50 sm:w-auto sm:min-w-[9rem] max-sm:w-full';
 
-/** List index pages — aligns with page gradient */
-export const adminListPageWrap =
-    'mx-auto w-full max-w-7xl space-y-5 pb-8';
+/** List index pages — full width of main content */
+export const adminListPageWrap = 'w-full space-y-3 sm:space-y-4';
 
-/** Toolbar strip above data tables (inner layout lives in AdminListToolbar) */
+/** Toolbar row above list tables */
 export const adminPageToolbar =
-    'rounded-2xl border border-violet-200/80 bg-gradient-to-br from-white via-violet-50/60 to-indigo-50/50 p-5 shadow-lg shadow-violet-200/30 ring-1 ring-violet-100/70 dark:border-violet-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/60 dark:shadow-black/40 dark:ring-white/10';
+    'flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4';
 
-/** Table shell — solid surface + depth (readable body text) */
+export const adminPageToolbarSearch = 'min-w-0 w-full flex-1 sm:max-w-xl';
+
+export const adminSearchInput =
+    'block w-full min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:text-sm';
+
+/** Add button in list toolbars — full width on mobile only */
+export const adminToolbarAddBtn =
+    'inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 sm:w-auto';
+
+/** Table shell — horizontal scroll on small screens */
 export const adminTableWrap =
-    'overflow-x-auto rounded-2xl border border-slate-200/90 bg-white shadow-xl shadow-slate-300/25 ring-1 ring-slate-200/60 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/50 dark:ring-white/10';
+    'overflow-x-auto overscroll-x-contain rounded-lg border border-slate-200 bg-white [-webkit-overflow-scrolling:touch] dark:border-slate-800 dark:bg-slate-900';
 
 export const adminTable =
-    'min-w-full divide-y divide-slate-100 text-[15px] leading-snug dark:divide-slate-700/80';
+    'w-full min-w-[20rem] text-sm text-slate-700 dark:text-slate-300';
+
+export const adminTableWide =
+    'w-full text-sm text-slate-700 dark:text-slate-300';
 
 export const adminTableHead =
-    'border-b border-violet-200/80 bg-gradient-to-r from-violet-100/90 via-white to-indigo-50/90 dark:border-slate-700 dark:from-slate-800 dark:via-slate-800/95 dark:to-slate-800/90';
+    'border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80';
 
 export const adminTableTh =
-    'whitespace-nowrap px-5 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200';
+    'px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400';
 
 /** Default cell padding for list tables */
-export const adminTableTd = 'px-5 py-4 align-middle';
+export const adminTableTd = 'px-4 py-3 align-middle';
 
 export const adminTableTdStrong =
     'font-semibold text-slate-950 dark:text-white';
@@ -93,13 +140,30 @@ export const adminTableTdMuted =
     'text-slate-800 dark:text-slate-200';
 
 export const adminTableRowHover =
-    'transition-colors odd:bg-white even:bg-slate-50/90 hover:bg-violet-50 dark:odd:bg-slate-900/70 dark:even:bg-slate-800/50 dark:hover:bg-violet-950/35';
+    'border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50';
 
-/** Hide non-critical columns on small screens (pair header + cells with `hidden md:table-cell`) */
+/** Hide non-critical columns on small screens (pair header + cells) */
 export const adminTableCellHiddenSm = 'hidden md:table-cell';
 
+export const adminTableCellHiddenMd = 'hidden md:table-cell';
+
+export const adminTableCellHiddenLg = 'hidden lg:table-cell';
+
+/** Secondary line under primary cell — mobile only */
+export const adminTableMobileMeta =
+    'mt-1 text-xs font-normal text-slate-500 dark:text-slate-400';
+
+export const adminTableActions =
+    'flex flex-wrap items-center justify-end gap-1 sm:gap-2';
+
+export const adminTableActionLink =
+    'inline-flex min-h-10 items-center rounded-lg px-2.5 py-1.5';
+
+export const adminPaginationRow =
+    'mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between';
+
 export const adminPaginationBtn =
-    'rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/50 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-slate-700';
+    'min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-40 sm:w-auto sm:min-w-[7rem] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200';
 
 export const adminMutedText = 'text-sm text-slate-600 dark:text-slate-300';
 
@@ -108,7 +172,7 @@ export const adminToolbarHelpText =
     'text-sm leading-relaxed text-slate-600 dark:text-slate-300';
 
 export const adminStatCard =
-    'group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-slate-200/40 ring-1 ring-slate-100 transition hover:shadow-xl hover:shadow-violet-500/10 dark:border-slate-700/80 dark:bg-slate-900 dark:shadow-black/25 dark:ring-white/5 dark:hover:shadow-violet-900/20';
+    'rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900';
 
 export const adminBadgeYes =
     'inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300';
@@ -117,10 +181,10 @@ export const adminBadgeNo =
     'inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300';
 
 export const adminLinkAction =
-    'font-semibold text-violet-600 transition hover:text-violet-500 dark:text-violet-400 dark:hover:text-violet-300';
+    'text-sm font-medium text-violet-600 hover:text-violet-500 dark:text-violet-400';
 
 export const adminDangerText =
-    'font-semibold text-red-600 transition hover:text-red-500 dark:text-red-400';
+    'text-sm font-medium text-red-600 hover:text-red-500 dark:text-red-400';
 
 export const adminBadgeNeutral =
     'inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-slate-700 dark:bg-slate-800 dark:text-slate-300';

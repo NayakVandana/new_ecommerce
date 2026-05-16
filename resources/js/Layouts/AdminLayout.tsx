@@ -1,9 +1,19 @@
+import AdminThemeToggle from '@/admin/AdminThemeToggle';
 import AppearanceSync from '@/Components/AppearanceSync';
-import { adminPageGradient } from '@/admin/adminTheme';
+import {
+    adminLayoutHeader,
+    adminLayoutMain,
+    adminLayoutShell,
+    adminLayoutSidebar,
+    adminMobilePageTitle,
+    adminNavActive,
+    adminNavInactive,
+    adminPageTitle,
+} from '@/admin/adminTheme';
 import { adminApiPost, setAdminApiToken } from '@/api/adminClient';
 import axios from 'axios';
 import { Link, router } from '@inertiajs/react';
-import { PropsWithChildren, useState, type ComponentType } from 'react';
+import { PropsWithChildren, useEffect, useState, type ComponentType } from 'react';
 
 function IconGauge({ className }: { className?: string }) {
     return (
@@ -46,14 +56,6 @@ function IconCube({ className }: { className?: string }) {
     );
 }
 
-function IconCart({ className }: { className?: string }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-        </svg>
-    );
-}
-
 function IconMenu({ className }: { className?: string }) {
     return (
         <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -70,73 +72,128 @@ function IconClose({ className }: { className?: string }) {
     );
 }
 
-function IconListRows({ className }: { className?: string }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-            />
-        </svg>
-    );
-}
-
-function IconPlusSm({ className }: { className?: string }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-    );
-}
-
-function CatalogNavGroup({
-    title,
+function NavLink({
+    href,
+    active,
     icon: Icon,
-    listHref,
-    createHref,
-    listActive,
-    createActive,
-    onNavigate,
+    children,
+    onClick,
 }: {
-    title: string;
+    href: string;
+    active: boolean;
     icon: ComponentType<{ className?: string }>;
-    listHref: string;
-    createHref: string;
-    listActive: boolean;
-    createActive: boolean;
-    onNavigate: () => void;
+    children: React.ReactNode;
+    onClick?: () => void;
 }) {
-    const row = (active: boolean) =>
-        `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition ${
-            active
-                ? 'bg-violet-500/35 font-semibold text-white shadow-inner shadow-violet-950/40 ring-1 ring-violet-400/25'
-                : 'text-slate-400 hover:bg-white/8 hover:text-white'
-        }`;
-
     return (
-        <div className="rounded-xl border border-white/10 bg-white/[0.06] p-2 shadow-sm shadow-black/20 ring-1 ring-white/[0.06]">
-            <div className="mb-1 flex items-center gap-2 border-b border-white/5 px-2 pb-2 pt-0.5">
-                <Icon className="h-4 w-4 shrink-0 text-violet-300/90" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                    {title}
-                </span>
-            </div>
-            <div className="mt-1 flex flex-col gap-0.5">
-                <Link href={listHref} className={row(listActive)} onClick={onNavigate}>
-                    <IconListRows className="h-4 w-4 shrink-0 opacity-80" />
-                    List all
-                </Link>
-                <Link href={createHref} className={row(createActive)} onClick={onNavigate}>
-                    <IconPlusSm className="h-4 w-4 shrink-0 opacity-80" />
-                    Add new
-                </Link>
-            </div>
-        </div>
+        <Link
+            href={href}
+            onClick={onClick}
+            className={active ? adminNavActive : adminNavInactive}
+        >
+            <Icon className="h-[18px] w-[18px] shrink-0 opacity-80" />
+            <span className="truncate">{children}</span>
+        </Link>
     );
 }
 
-export default function AdminLayout({
+function routeMatches(...names: string[]): boolean {
+    return names.some((name) => route().current(name));
+}
+
+function SidebarContent({
+    onNavigate,
+    loggingOut,
+    onLogout,
+}: {
+    onNavigate: () => void;
+    loggingOut: boolean;
+    onLogout: () => void;
+}) {
+    return (
+        <>
+            <Link
+                href={route('admin.dashboard')}
+                onClick={onNavigate}
+                className="mb-8 flex items-center gap-2.5 px-1"
+            >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 text-sm font-bold text-white">
+                    S
+                </div>
+                <span className="text-[15px] font-semibold text-slate-900 dark:text-white">
+                    Store OS
+                </span>
+            </Link>
+
+            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
+                <NavLink
+                    href={route('admin.dashboard')}
+                    active={route().current('admin.dashboard') ?? false}
+                    icon={IconGauge}
+                    onClick={onNavigate}
+                >
+                    Dashboard
+                </NavLink>
+                <NavLink
+                    href={route('admin.brands.index')}
+                    active={routeMatches(
+                        'admin.brands.index',
+                        'admin.brands.create',
+                        'admin.brands.edit',
+                    )}
+                    icon={IconTag}
+                    onClick={onNavigate}
+                >
+                    Brands
+                </NavLink>
+                <NavLink
+                    href={route('admin.categories.index')}
+                    active={routeMatches(
+                        'admin.categories.index',
+                        'admin.categories.create',
+                        'admin.categories.edit',
+                    )}
+                    icon={IconFolder}
+                    onClick={onNavigate}
+                >
+                    Categories
+                </NavLink>
+                <NavLink
+                    href={route('admin.products.index')}
+                    active={routeMatches(
+                        'admin.products.index',
+                        'admin.products.create',
+                        'admin.products.edit',
+                    )}
+                    icon={IconCube}
+                    onClick={onNavigate}
+                >
+                    Products
+                </NavLink>
+            </nav>
+
+            <div className="mt-6 space-y-1 border-t border-slate-200 pt-4 dark:border-slate-800">
+                <Link
+                    href={route('home')}
+                    onClick={onNavigate}
+                    className="block rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                >
+                    Storefront
+                </Link>
+                <button
+                    type="button"
+                    onClick={onLogout}
+                    disabled={loggingOut}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-100 hover:text-red-600 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-red-400"
+                >
+                    {loggingOut ? 'Signing out…' : 'Sign out'}
+                </button>
+            </div>
+        </>
+    );
+}
+
+function AdminLayout({
     heading,
     children,
 }: PropsWithChildren<{ heading?: string }>) {
@@ -156,194 +213,87 @@ export default function AdminLayout({
         }
     };
 
-    const dashActive = route().current('admin.dashboard') ?? false;
-
-    const brandsListActive =
-        route().current('admin.brands.index') ||
-        route().current('admin.brands.edit');
-    const brandsCreateActive = route().current('admin.brands.create');
-
-    const categoriesListActive =
-        route().current('admin.categories.index') ||
-        route().current('admin.categories.edit');
-    const categoriesCreateActive =
-        route().current('admin.categories.create');
-
-    const productsListActive =
-        route().current('admin.products.index') ||
-        route().current('admin.products.edit');
-    const productsCreateActive = route().current('admin.products.create');
-
-    const navPrimary = (active: boolean) =>
-        `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-            active
-                ? 'bg-white/15 text-white shadow-lg shadow-violet-950/40 ring-1 ring-white/15'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-        }`;
-
-    const sectionLabel =
-        'mt-5 px-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 first:mt-0';
-
     const closeMobile = () => setMobileOpen(false);
 
-    const SidebarNav = () => (
-        <>
-            <Link
-                href={route('admin.dashboard')}
-                className={navPrimary(dashActive)}
-                onClick={closeMobile}
-            >
-                <IconGauge className="h-5 w-5 shrink-0 opacity-90" />
-                Dashboard
-            </Link>
-
-            <p className={sectionLabel}>Catalog</p>
-            <div className="mt-2 flex flex-col gap-2">
-                <CatalogNavGroup
-                    title="Brands"
-                    icon={IconTag}
-                    listHref={route('admin.brands.index')}
-                    createHref={route('admin.brands.create')}
-                    listActive={brandsListActive ?? false}
-                    createActive={brandsCreateActive ?? false}
-                    onNavigate={closeMobile}
-                />
-                <CatalogNavGroup
-                    title="Categories"
-                    icon={IconFolder}
-                    listHref={route('admin.categories.index')}
-                    createHref={route('admin.categories.create')}
-                    listActive={categoriesListActive ?? false}
-                    createActive={categoriesCreateActive ?? false}
-                    onNavigate={closeMobile}
-                />
-                <CatalogNavGroup
-                    title="Products"
-                    icon={IconCube}
-                    listHref={route('admin.products.index')}
-                    createHref={route('admin.products.create')}
-                    listActive={productsListActive ?? false}
-                    createActive={productsCreateActive ?? false}
-                    onNavigate={closeMobile}
-                />
-            </div>
-
-            <p className={sectionLabel}>Sales</p>
-            <span className="flex cursor-not-allowed items-center gap-2 rounded-lg border border-white/5 bg-white/[0.03] px-2.5 py-2 text-sm text-slate-600">
-                <IconCart className="h-4 w-4 opacity-50" />
-                Orders — soon
-            </span>
-        </>
-    );
+    useEffect(() => {
+        if (!mobileOpen) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [mobileOpen]);
 
     return (
-        <div className={`${adminPageGradient} text-slate-900 dark:text-slate-100`}>
+        <div className={adminLayoutShell}>
             <AppearanceSync />
 
-            {/* Mobile overlay */}
             {mobileOpen ? (
                 <button
                     type="button"
                     aria-label="Close menu"
-                    className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-900/30 lg:hidden"
                     onClick={() => setMobileOpen(false)}
                 />
             ) : null}
 
-            {/* Mobile drawer */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[min(100%-3rem,18rem)] flex-col border-r border-white/10 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[min(100vw,17.5rem)] flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] transition-transform duration-200 lg:hidden ${
                     mobileOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}
+                } ${adminLayoutSidebar}`}
             >
-                <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
-                    <span className="bg-gradient-to-r from-white to-violet-200 bg-clip-text text-lg font-bold tracking-tight text-transparent">
-                        Store OS
-                    </span>
-                    <button
-                        type="button"
-                        className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"
-                        onClick={() => setMobileOpen(false)}
-                    >
-                        <IconClose className="h-5 w-5" />
-                    </button>
-                </div>
-                <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-4">
-                    <SidebarNav />
-                </nav>
-                <div className="border-t border-white/10 p-4">
-                    <Link
-                        href={route('home')}
-                        className="text-sm font-semibold text-violet-300 transition hover:text-white"
-                        onClick={closeMobile}
-                    >
-                        ← View storefront
-                    </Link>
-                </div>
+                <button
+                    type="button"
+                    className="mb-3 ml-auto rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+                    onClick={() => setMobileOpen(false)}
+                    aria-label="Close menu"
+                >
+                    <IconClose className="h-5 w-5" />
+                </button>
+                <SidebarContent
+                    onNavigate={closeMobile}
+                    loggingOut={loggingOut}
+                    onLogout={() => void logout()}
+                />
             </aside>
 
-            <div className="flex min-h-screen lg:pl-0">
-                {/* Desktop sidebar */}
-                <aside className="relative hidden w-72 shrink-0 flex-col border-r border-white/10 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 lg:flex">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-600/20 via-transparent to-transparent" />
-                    <div className="relative flex h-[4.5rem] flex-col justify-center border-b border-white/10 px-6">
-                        <span className="bg-gradient-to-r from-white via-violet-100 to-indigo-200 bg-clip-text text-xl font-bold tracking-tight text-transparent">
-                            Store OS
-                        </span>
-                        <span className="mt-0.5 text-xs font-medium text-slate-500">
-                            Admin console
-                        </span>
-                    </div>
-                    <nav className="relative flex flex-1 flex-col gap-0.5 overflow-y-auto p-4">
-                        <SidebarNav />
-                    </nav>
-                    <div className="relative border-t border-white/10 p-4">
-                        <Link
-                            href={route('home')}
-                            className="flex items-center gap-2 text-sm font-semibold text-violet-300/90 transition hover:text-white"
-                        >
-                            <span aria-hidden>←</span> Storefront
-                        </Link>
-                    </div>
+            <div className="flex min-h-screen lg:pl-56">
+                <aside
+                    className={`fixed inset-y-0 left-0 z-20 hidden w-56 flex-col px-4 py-6 lg:flex ${adminLayoutSidebar}`}
+                >
+                    <SidebarContent
+                        onNavigate={closeMobile}
+                        loggingOut={loggingOut}
+                        onLogout={() => void logout()}
+                    />
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 lg:h-16 lg:px-8">
-                        <div className="flex min-w-0 items-center gap-3">
+                    <header className={adminLayoutHeader}>
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                             <button
                                 type="button"
-                                className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 lg:hidden dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-violet-700 dark:hover:bg-slate-700"
+                                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() => setMobileOpen(true)}
                                 aria-label="Open menu"
                             >
-                                <IconMenu className="h-5 w-5" />
+                                <IconMenu className="h-6 w-6" />
                             </button>
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">
-                                    Admin
-                                </p>
-                                {heading ? (
-                                    <h1 className="truncate text-lg font-bold text-slate-900 dark:text-white">
-                                        {heading}
-                                    </h1>
-                                ) : (
-                                    <p className="truncate text-sm font-medium text-slate-500 dark:text-slate-400">
-                                        Store OS
-                                    </p>
-                                )}
-                            </div>
+                            {heading ? (
+                                <h1 className={adminMobilePageTitle}>{heading}</h1>
+                            ) : (
+                                <span className={adminMobilePageTitle}>Admin</span>
+                            )}
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => void logout()}
-                            disabled={loggingOut}
-                            className="shrink-0 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-800 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-950 disabled:opacity-50 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200 dark:hover:border-red-900 dark:hover:bg-red-950/50 dark:hover:text-red-300"
-                        >
-                            {loggingOut ? 'Signing out…' : 'Log out'}
-                        </button>
+                        <AdminThemeToggle />
                     </header>
 
-                    <main className="flex-1 min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+                    <main className={adminLayoutMain}>
+                        {heading ? (
+                            <h1 className={`${adminPageTitle} hidden sm:block`}>
+                                {heading}
+                            </h1>
+                        ) : null}
                         {children}
                     </main>
                 </div>
@@ -351,3 +301,5 @@ export default function AdminLayout({
         </div>
     );
 }
+export default AdminLayout;
+

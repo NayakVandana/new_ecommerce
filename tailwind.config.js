@@ -9,6 +9,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.tsx',
+        './resources/js/**/*.ts',
     ],
 
     // Fonts: Tailwind default `font-sans` = system-ui stack (no paid / CDN webfonts)

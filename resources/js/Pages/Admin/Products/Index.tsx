@@ -10,13 +10,18 @@ import {
     adminListPageWrap,
     adminMutedText,
     adminPaginationBtn,
-    adminTable,
+    adminPaginationRow,
+    adminTableActionLink,
+    adminTableActions,
+    adminTableCellHiddenLg,
     adminTableHead,
+    adminTableMobileMeta,
     adminTableRowHover,
     adminTableTd,
     adminTableTdMuted,
     adminTableTdStrong,
     adminTableTh,
+    adminTableWide,
     adminTableWrap,
 } from '@/admin/adminTheme';
 import {
@@ -156,7 +161,6 @@ export default function Index() {
             <AdminLayout heading="Products">
                 <div className={adminListPageWrap}>
                     <AdminListToolbar
-                        description="SKUs, variants, and catalog placement. Search matches name, slug, or base SKU."
                         addHref={route('admin.products.create')}
                         addLabel="Add product"
                         searchPlaceholder="Search products…"
@@ -166,20 +170,32 @@ export default function Index() {
 
                     {error && <div className={adminErrorBanner}>{error}</div>}
                     <div className={adminTableWrap}>
-                        <table className={adminTable}>
+                        <table className={adminTableWide}>
                             <thead className={adminTableHead}>
                                 <tr>
                                     <th className={adminTableTh}>Product</th>
-                                    <th className={adminTableTh}>Brand</th>
-                                    <th className={adminTableTh}>Category</th>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenLg}`}
+                                    >
+                                        Brand
+                                    </th>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenLg}`}
+                                    >
+                                        Category
+                                    </th>
                                     <th className={adminTableTh}>Status</th>
-                                    <th className={adminTableTh}>Variants</th>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenLg}`}
+                                    >
+                                        Variants
+                                    </th>
                                     <th className={`${adminTableTh} text-right`}>
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/80">
+                            <tbody>
                                 {loading && (
                                     <tr>
                                         <td
@@ -211,16 +227,35 @@ export default function Index() {
                                                         <div className="mt-0.5 truncate text-xs font-medium text-slate-600 dark:text-slate-400">
                                                             {row.slug}
                                                         </div>
+                                                        <p
+                                                            className={`${adminTableMobileMeta} lg:hidden`}
+                                                        >
+                                                            {row.brand?.name ??
+                                                                'No brand'}
+                                                            {' · '}
+                                                            {row.subcategory
+                                                                ?.category
+                                                                ?.name ??
+                                                                'No category'}
+                                                            {' · '}
+                                                            {Array.isArray(
+                                                                row.variants,
+                                                            )
+                                                                ? row.variants
+                                                                      .length
+                                                                : 0}{' '}
+                                                            variants
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td
-                                                className={`${adminTableTd} ${adminTableTdMuted}`}
+                                                className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenLg}`}
                                             >
                                                 {row.brand?.name ?? '—'}
                                             </td>
                                             <td
-                                                className={`${adminTableTd} ${adminTableTdMuted}`}
+                                                className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenLg}`}
                                             >
                                                 {row.subcategory?.category
                                                     ?.name ?? '—'}
@@ -240,33 +275,37 @@ export default function Index() {
                                                 </span>
                                             </td>
                                             <td
-                                                className={`${adminTableTd} ${adminTableTdMuted}`}
+                                                className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenLg}`}
                                             >
                                                 {Array.isArray(row.variants)
                                                     ? row.variants.length
                                                     : 0}
                                             </td>
-                                            <td
-                                                className={`${adminTableTd} text-right text-sm`}
-                                            >
-                                                <Link
-                                                    href={route(
-                                                        'admin.products.edit',
-                                                        row.id,
-                                                    )}
-                                                    className={adminLinkAction}
+                                            <td className={adminTableTd}>
+                                                <div
+                                                    className={adminTableActions}
                                                 >
-                                                    Edit
-                                                </Link>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        void destroy(row.id)
-                                                    }
-                                                    className={`ml-3 inline-flex rounded-lg px-1.5 py-0.5 transition hover:bg-red-50 dark:hover:bg-red-950/40 ${adminDangerText}`}
-                                                >
-                                                    Delete
-                                                </button>
+                                                    <Link
+                                                        href={route(
+                                                            'admin.products.edit',
+                                                            row.id,
+                                                        )}
+                                                        className={`${adminLinkAction} ${adminTableActionLink}`}
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            void destroy(
+                                                                row.id,
+                                                            )
+                                                        }
+                                                        className={`${adminDangerText} ${adminTableActionLink} hover:bg-red-50 dark:hover:bg-red-950/40`}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -286,7 +325,7 @@ export default function Index() {
                         </table>
                     </div>
                     {paginator && paginator.last_page > 1 && (
-                        <div className="mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className={adminPaginationRow}>
                             <button
                                 type="button"
                                 disabled={page <= 1}
