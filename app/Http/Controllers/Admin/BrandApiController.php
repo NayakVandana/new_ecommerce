@@ -45,6 +45,29 @@ class BrandApiController extends Controller
         }
     }
 
+    public function postBrandShow(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer', 'exists:brands,id'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $brand = Brand::query()->find($request->input('id'));
+
+            if (! $brand) {
+                return $this->sendJsonResponse(false, 'Brand not found.', null, 200);
+            }
+
+            return $this->sendJsonResponse(true, 'Brand fetched successfully.', $brand, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
     public function postBrandStore(Request $request)
     {
         try {

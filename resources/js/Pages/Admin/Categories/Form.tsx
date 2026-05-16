@@ -32,7 +32,7 @@ import {
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 type SubcategoryRow = {
     id: number;
@@ -55,11 +55,72 @@ type Category = {
 };
 
 type PageProps = AppPageProps<{
-    category: Category | null;
+    categoryId: number | null;
 }>;
 
 export default function Form() {
-    const { category: existing } = usePage<PageProps>().props;
+    const { categoryId } = usePage<PageProps>().props;
+
+    const [existing, setExisting] = useState<Category | null>(null);
+    const [loading, setLoading] = useState(categoryId !== null);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    const reloadCategory = useCallback(async () => {
+        if (!categoryId) {
+            return;
+        }
+        const res = await adminApiPost<AdminApiEnvelope<Category>>(
+            '/categories/show',
+            { id: categoryId },
+        );
+        if (res.success && res.data) {
+            setExisting(res.data);
+        }
+    }, [categoryId]);
+
+    useEffect(() => {
+        if (!categoryId) {
+            setExisting(null);
+            setLoading(false);
+            setLoadError(null);
+
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            setLoading(true);
+            setLoadError(null);
+            try {
+                const res = await adminApiPost<AdminApiEnvelope<Category>>(
+                    '/categories/show',
+                    { id: categoryId },
+                );
+                if (cancelled) {
+                    return;
+                }
+                if (!res.success || !res.data) {
+                    setLoadError(res.message || 'Could not load category.');
+
+                    return;
+                }
+                setExisting(res.data);
+            } catch {
+                if (!cancelled) {
+                    setLoadError('Could not load category.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [categoryId]);
 
     const initial = useMemo(
         () => ({
@@ -73,12 +134,21 @@ export default function Form() {
         [existing],
     );
 
-    const [name, setName] = useState(initial.name);
-    const [slug, setSlug] = useState(initial.slug);
-    const [imageUrl, setImageUrl] = useState(initial.image_url);
-    const [description, setDescription] = useState(initial.description);
-    const [isActive, setIsActive] = useState(initial.is_active);
-    const [sortOrder, setSortOrder] = useState(initial.sort_order);
+    const [name, setName] = useState('');
+    const [slug, setSlug] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [description, setDescription] = useState('');
+    const [isActive, setIsActive] = useState(true);
+    const [sortOrder, setSortOrder] = useState(0);
+
+    useEffect(() => {
+        setName(initial.name);
+        setSlug(initial.slug);
+        setImageUrl(initial.image_url);
+        setDescription(initial.description);
+        setIsActive(initial.is_active);
+        setSortOrder(initial.sort_order);
+    }, [initial]);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -157,7 +227,7 @@ export default function Form() {
             setSubName('');
             setSubSlug('');
             setSubSort(0);
-            router.reload({ only: ['category'] });
+            await reloadCategory();
         } catch {
             setError('Could not add subcategory.');
         } finally {
@@ -187,7 +257,7 @@ export default function Form() {
                 return;
             }
             setEditingSub(null);
-            router.reload({ only: ['category'] });
+            await reloadCategory();
         } catch {
             setError('Could not update subcategory.');
         } finally {
@@ -210,7 +280,7 @@ export default function Form() {
                 return;
             }
             if (editingSub?.id === id) setEditingSub(null);
-            router.reload({ only: ['category'] });
+            await reloadCategory();
         } catch {
             setError('Could not delete.');
         } finally {
@@ -236,8 +306,14 @@ export default function Form() {
                     </Link>
                 </div>
 
-                {error && <div className={adminErrorBanner}>{error}</div>}
+                {(loadError || error) && (
+                    <div className={adminErrorBanner}>{loadError ?? error}</div>
+                )}
 
+                {loading && <p className={adminMutedText}>Loading…</p>}
+
+                {!loading && !loadError && (
+                <>
                 <form
                     onSubmit={(e) => void submitCategory(e)}
                     className={adminFormCard}
@@ -550,6 +626,8 @@ export default function Form() {
                             </button>
                         </form>
                     </div>
+                )}
+                </>
                 )}
                 </div>
             </AdminLayout>

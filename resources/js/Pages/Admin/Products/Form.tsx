@@ -120,9 +120,14 @@ type Meta = {
     genders: { id: number; name: string }[];
 };
 
+const emptyMeta: Meta = {
+    brands: [],
+    subcategories: [],
+    genders: [],
+};
+
 type PageProps = AppPageProps<{
-    product: Product | null;
-    meta: Meta;
+    productId: number | null;
 }>;
 
 type VariantFormRow = {
@@ -301,7 +306,67 @@ function buildInitialVariants(existing: Product | null): VariantFormRow[] {
 }
 
 export default function Form() {
-    const { product: existing, meta } = usePage<PageProps>().props;
+    const { productId } = usePage<PageProps>().props;
+
+    const [existing, setExisting] = useState<Product | null>(null);
+    const [meta, setMeta] = useState<Meta>(emptyMeta);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        (async () => {
+            setLoading(true);
+            setLoadError(null);
+            try {
+                const metaRes = await adminApiPost<AdminApiEnvelope<Meta>>(
+                    '/products/form-meta',
+                    {},
+                );
+                if (cancelled) {
+                    return;
+                }
+                if (!metaRes.success || !metaRes.data) {
+                    setLoadError(metaRes.message || 'Could not load form data.');
+
+                    return;
+                }
+                setMeta(metaRes.data);
+
+                if (productId) {
+                    const productRes = await adminApiPost<
+                        AdminApiEnvelope<Product>
+                    >('/products/show', { id: productId });
+                    if (cancelled) {
+                        return;
+                    }
+                    if (!productRes.success || !productRes.data) {
+                        setLoadError(
+                            productRes.message || 'Could not load product.',
+                        );
+
+                        return;
+                    }
+                    setExisting(productRes.data);
+                } else {
+                    setExisting(null);
+                }
+            } catch {
+                if (!cancelled) {
+                    setLoadError('Could not load form data.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [productId]);
 
     const initialProductFields = useMemo(
         () => ({
@@ -783,12 +848,21 @@ export default function Form() {
                         </Link>
                     </div>
 
+                    {loadError ? (
+                        <div className={adminErrorBanner}>{loadError}</div>
+                    ) : null}
+
                     {errors.form ? (
                         <div data-error-anchor="form" className={adminErrorBanner}>
                             {errors.form}
                         </div>
                     ) : null}
 
+                    {loading && (
+                        <p className={`mt-4 ${adminMutedText}`}>Loading…</p>
+                    )}
+
+                    {!loading && !loadError && (
                     <form
                         noValidate
                         onSubmit={(e) => void submit(e)}
@@ -1909,6 +1983,7 @@ export default function Form() {
                             <PublishPanel processing={processing} cancelHref={route('admin.products.index')} />
                         </aside>
                     </form>
+                    )}
                 </div>
             </AdminLayout>
         </>

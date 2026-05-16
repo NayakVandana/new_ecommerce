@@ -18,6 +18,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/dashboard/stats', [DashboardApiController::class, 'postStats']);
 
     Route::post('/products/list', [ProductApiController::class, 'postProductsList']);
+    Route::post('/products/form-meta', [ProductApiController::class, 'postProductFormMeta']);
+    Route::post('/products/show', [ProductApiController::class, 'postProductShow']);
     Route::post('/products/store', [ProductApiController::class, 'postProductStore']);
     Route::post('/products/update', [ProductApiController::class, 'postProductUpdate']);
     Route::post('/products/destroy', [ProductApiController::class, 'postProductDestroy']);
@@ -26,11 +28,13 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/media/upload-product-video', [AdminMediaUploadController::class, 'postUploadProductVideo']);
 
     Route::post('/brands/list', [BrandApiController::class, 'postBrandsList']);
+    Route::post('/brands/show', [BrandApiController::class, 'postBrandShow']);
     Route::post('/brands/store', [BrandApiController::class, 'postBrandStore']);
     Route::post('/brands/update', [BrandApiController::class, 'postBrandUpdate']);
     Route::post('/brands/destroy', [BrandApiController::class, 'postBrandDestroy']);
 
     Route::post('/categories/list', [CategoryApiController::class, 'postCategoriesList']);
+    Route::post('/categories/show', [CategoryApiController::class, 'postCategoryShow']);
     Route::post('/categories/store', [CategoryApiController::class, 'postCategoryStore']);
     Route::post('/categories/update', [CategoryApiController::class, 'postCategoryUpdate']);
     Route::post('/categories/destroy', [CategoryApiController::class, 'postCategoryDestroy']);

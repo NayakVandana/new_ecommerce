@@ -49,6 +49,31 @@ class CategoryApiController extends Controller
         }
     }
 
+    public function postCategoryShow(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer', 'exists:categories,id'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $category = Category::query()
+                ->with(['subcategories' => fn ($q) => $q->orderBy('sort_order')->orderBy('name')])
+                ->find($request->input('id'));
+
+            if (! $category) {
+                return $this->sendJsonResponse(false, 'Category not found.', null, 200);
+            }
+
+            return $this->sendJsonResponse(true, 'Category fetched successfully.', $category, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
     public function postCategoryStore(Request $request)
     {
         try {

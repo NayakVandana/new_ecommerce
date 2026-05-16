@@ -7,6 +7,8 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\ProductVideo;
+use App\Services\Admin\ProductFormLoaderService;
+use App\Services\Admin\ProductFormMetaService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +94,43 @@ class ProductApiController extends Controller
             });
 
             return $this->sendJsonResponse(true, 'Products fetched successfully.', $products, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postProductFormMeta(ProductFormMetaService $metaService)
+    {
+        try {
+            return $this->sendJsonResponse(true, 'Product form meta fetched successfully.', $metaService->get(), 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postProductShow(Request $request, ProductFormLoaderService $loader)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer', 'exists:products,id'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $product = Product::query()->find($request->input('id'));
+
+            if (! $product) {
+                return $this->sendJsonResponse(false, 'Product not found.', null, 200);
+            }
+
+            return $this->sendJsonResponse(
+                true,
+                'Product fetched successfully.',
+                $loader->loadForForm($product),
+                200,
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }

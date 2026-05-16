@@ -7,6 +7,7 @@ import {
     adminFormPageWrap,
     adminInput,
     adminLabel,
+    adminMutedText,
     adminPrimaryBtn,
 } from '@/admin/adminTheme';
 import {
@@ -16,7 +17,7 @@ import {
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 type Brand = {
     id: number;
@@ -29,11 +30,15 @@ type Brand = {
 };
 
 type PageProps = AppPageProps<{
-    brand: Brand | null;
+    brandId: number | null;
 }>;
 
 export default function Form() {
-    const { brand: existing } = usePage<PageProps>().props;
+    const { brandId } = usePage<PageProps>().props;
+
+    const [existing, setExisting] = useState<Brand | null>(null);
+    const [loading, setLoading] = useState(brandId !== null);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const initial = useMemo(
         () => ({
@@ -47,14 +52,67 @@ export default function Form() {
         [existing],
     );
 
-    const [name, setName] = useState(initial.name);
-    const [slug, setSlug] = useState(initial.slug);
-    const [logoUrl, setLogoUrl] = useState(initial.logo_url);
-    const [description, setDescription] = useState(initial.description);
-    const [isActive, setIsActive] = useState(initial.is_active);
-    const [sortOrder, setSortOrder] = useState(initial.sort_order);
+    const [name, setName] = useState('');
+    const [slug, setSlug] = useState('');
+    const [logoUrl, setLogoUrl] = useState('');
+    const [description, setDescription] = useState('');
+    const [isActive, setIsActive] = useState(true);
+    const [sortOrder, setSortOrder] = useState(0);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!brandId) {
+            setExisting(null);
+            setLoading(false);
+            setLoadError(null);
+
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            setLoading(true);
+            setLoadError(null);
+            try {
+                const res = await adminApiPost<AdminApiEnvelope<Brand>>(
+                    '/brands/show',
+                    { id: brandId },
+                );
+                if (cancelled) {
+                    return;
+                }
+                if (!res.success || !res.data) {
+                    setLoadError(res.message || 'Could not load brand.');
+
+                    return;
+                }
+                setExisting(res.data);
+            } catch {
+                if (!cancelled) {
+                    setLoadError('Could not load brand.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [brandId]);
+
+    useEffect(() => {
+        setName(initial.name);
+        setSlug(initial.slug);
+        setLogoUrl(initial.logo_url);
+        setDescription(initial.description);
+        setIsActive(initial.is_active);
+        setSortOrder(initial.sort_order);
+    }, [initial]);
 
     const submit = async (e: FormEvent) => {
         e.preventDefault();
@@ -106,8 +164,13 @@ export default function Form() {
                     </Link>
                 </div>
 
-                {error && <div className={adminErrorBanner}>{error}</div>}
+                {(loadError || error) && (
+                    <div className={adminErrorBanner}>{loadError ?? error}</div>
+                )}
 
+                {loading && <p className={adminMutedText}>Loading…</p>}
+
+                {!loading && !loadError && (
                 <form
                     onSubmit={(e) => void submit(e)}
                     className={adminFormCard}
@@ -203,6 +266,7 @@ export default function Form() {
                         </Link>
                     </div>
                 </form>
+                )}
                 </div>
             </AdminLayout>
         </>
