@@ -214,7 +214,7 @@ export default function Cart() {
                             </div>
                             <div className="flex justify-between">
                                 <dt className="text-slate-500">Shipping</dt>
-                                <dd className="text-slate-600 dark:text-slate-400">Calculated at checkout</dd>
+                                <dd className="text-stone-600 dark:text-stone-400">At checkout</dd>
                             </div>
                         </dl>
                         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -224,12 +224,12 @@ export default function Cart() {
                             </span>
                         </div>
                         <p className={`mt-2 ${storeMutedText}`}>
-                            Tax and shipping calculated at checkout.
+                            Cash on delivery only. Complete checkout to confirm your order.
                         </p>
                         <div className="mt-6 flex flex-col gap-3">
-                            <span className={`${storeBtnPrimary} cursor-not-allowed text-center opacity-60`}>
-                                Checkout (coming soon)
-                            </span>
+                            <Link href={route('guest.checkout')} className={`${storeBtnPrimary} text-center`}>
+                                Proceed to checkout
+                            </Link>
                             <Link href={route('guest.catalog')} className={`${storeBtnSecondary} text-center`}>
                                 Continue shopping
                             </Link>

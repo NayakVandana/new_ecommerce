@@ -40,6 +40,8 @@ Route::get('/products/{slug}', fn (string $slug) => Inertia::render('Guest/Produ
 
 Route::get('/cart', fn () => Inertia::render('Guest/Cart'))->name('guest.cart');
 
+Route::get('/checkout', fn () => Inertia::render('Guest/Checkout'))->name('guest.checkout');
+
 Route::get('/welcome', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),

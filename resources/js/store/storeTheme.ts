@@ -137,6 +137,32 @@ export const storeBtnGhost =
 export const storeInput =
     'w-full border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:focus:border-stone-300 dark:focus:ring-stone-300';
 
+export const storeInputError =
+    'border-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-500 dark:focus:border-red-400 dark:focus:ring-red-400';
+
+export const storeFieldError = 'mt-1 text-xs text-red-600 dark:text-red-400';
+
+export const storeCheckoutStepper =
+    'mb-8 border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900 sm:p-5';
+
+export const storeCheckoutStepTrack =
+    'grid grid-cols-3 gap-1 sm:gap-2';
+
+export const storeCheckoutStepBtn =
+    'flex min-h-11 flex-col items-center justify-center gap-1 px-1 py-2 text-center transition sm:px-2';
+
+export const storeCheckoutStepBtnActive =
+    `${storeCheckoutStepBtn} bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900`;
+
+export const storeCheckoutStepBtnDone =
+    `${storeCheckoutStepBtn} bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100`;
+
+export const storeCheckoutStepBtnPending =
+    `${storeCheckoutStepBtn} text-stone-400 dark:text-stone-500`;
+
+export const storeCheckoutNav =
+    'mt-8 flex flex-col-reverse gap-3 border-t border-stone-200 pt-6 sm:flex-row sm:justify-between dark:border-stone-800';
+
 export const storeLabel =
     'text-[11px] font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400';
 
