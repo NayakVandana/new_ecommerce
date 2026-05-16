@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminMediaUploadController;
 use App\Http\Controllers\Admin\BrandApiController;
 use App\Http\Controllers\Admin\CategoryApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
+use App\Http\Controllers\Admin\OrderApiController;
 use App\Http\Controllers\Admin\ProductApiController;
 use App\Http\Controllers\Admin\SubcategoryApiController;
 use App\Http\Controllers\Admin\UserApiController;
@@ -45,4 +46,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/subcategories/destroy', [SubcategoryApiController::class, 'postSubcategoryDestroy']);
 
     Route::post('/users/list', [UserApiController::class, 'postUsersList']);
+
+    Route::post('/orders/meta', [OrderApiController::class, 'postOrdersMeta']);
+    Route::post('/orders/list', [OrderApiController::class, 'postOrdersList']);
+    Route::post('/orders/show', [OrderApiController::class, 'postOrderShow']);
+    Route::post('/orders/update-status', [OrderApiController::class, 'postOrderUpdateStatus']);
 });
