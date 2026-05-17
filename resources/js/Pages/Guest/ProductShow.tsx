@@ -1,5 +1,6 @@
 import { cartStore } from '@/api/cartClient';
 import { catalogProductShow } from '@/api/catalogClient';
+import { recentlyViewedStore } from '@/api/recentlyViewedClient';
 import type { CatalogProduct, CatalogVariant } from '@/store/catalogTypes';
 import {
     formatStorePrice,
@@ -53,6 +54,14 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
             .catch(() => setError('Could not load product.'))
             .finally(() => setLoading(false));
     }, [productSlug]);
+
+    useEffect(() => {
+        if (!isLoggedIn || !product?.id) {
+            return;
+        }
+
+        void recentlyViewedStore.record(product.id);
+    }, [isLoggedIn, product?.id]);
 
     const variants = product?.variants ?? [];
     const activeVariant: CatalogVariant | null =

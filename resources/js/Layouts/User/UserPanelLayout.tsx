@@ -37,6 +37,11 @@ import { PropsWithChildren, useEffect, useState } from 'react';
 const mainSidebarLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
     { label: 'Overview', href: route('dashboard'), routeMatch: 'dashboard' },
     { label: 'Wishlist', href: route('user.wishlist.index'), routeMatch: 'user.wishlist.index' },
+    {
+        label: 'Recently viewed',
+        href: route('user.recently-viewed.index'),
+        routeMatch: 'user.recently-viewed.index',
+    },
     { label: 'My orders', href: route('user.orders.index'), routeMatch: ['user.orders.index', 'user.orders.show'] },
 ];
 

@@ -60,6 +60,7 @@ Route::get('/profile', fn () => Inertia::render('User/Profile/Edit', [
 
 Route::prefix('account')->name('user.')->group(function () {
     Route::get('/wishlist', fn () => Inertia::render('User/Wishlist/Index'))->name('wishlist.index');
+    Route::get('/recently-viewed', fn () => Inertia::render('User/RecentlyViewed/Index'))->name('recently-viewed.index');
     Route::get('/orders', fn () => Inertia::render('User/Orders/Index'))->name('orders.index');
     Route::get('/orders/{id}', fn (int $id) => Inertia::render('User/Orders/Show', ['orderId' => $id]))
         ->whereNumber('id')
