@@ -317,7 +317,7 @@ export function validateProductFormClient(input: {
     name: string;
     variants: {
         sku: string;
-        price: string;
+        finalPrice: string;
         size: string;
         color: string;
         color_hex: string;
@@ -358,20 +358,20 @@ export function validateProductFormClient(input: {
             );
         }
 
-        const priceNum = Number(row.price);
-        if (!String(row.price).trim()) {
+        const priceNum = Number(row.finalPrice);
+        if (!String(row.finalPrice).trim()) {
             errors = setVariantFieldError(
                 errors,
                 index,
                 'price',
-                'Price is required.',
+                'Final price is required.',
             );
         } else if (Number.isNaN(priceNum) || priceNum < 0) {
             errors = setVariantFieldError(
                 errors,
                 index,
                 'price',
-                'Enter a valid price.',
+                'Enter a valid final price.',
             );
         }
 

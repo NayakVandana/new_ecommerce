@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/dashboard/dashboard-stats', [DashboardApiController::class, 'postStats']);
 
     Route::post('/products/products-list', [ProductApiController::class, 'postProductsList']);
+    Route::post('/products/product-variants-list', [ProductApiController::class, 'postProductVariantsList']);
     Route::post('/products/form-meta', [ProductApiController::class, 'postProductFormMeta']);
     Route::post('/products/product-show', [ProductApiController::class, 'postProductShow']);
     Route::post('/products/product-store', [ProductApiController::class, 'postProductStore']);

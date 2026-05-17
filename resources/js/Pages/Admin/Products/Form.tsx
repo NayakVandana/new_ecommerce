@@ -54,6 +54,9 @@ import {
     type ProductFormErrors,
     type VariantFieldErrors,
 } from '@/lib/productFormErrors';
+import VariantPricingGrid, {
+    type VariantPricingRow,
+} from '@/Components/admin/VariantPricingGrid';
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -63,8 +66,14 @@ type Variant = {
     id: number;
     sku: string;
     price: string | number;
+    compare_at_price?: string | number | null;
+    list_price?: string | number | null;
+    cost?: string | number | null;
+    discount_percent?: string | number | null;
+    commission_percent?: string | number | null;
     stock_quantity: number;
     is_default: boolean;
+    is_active?: boolean;
     size?: string | null;
     color?: string | null;
     color_hex?: string | null;
@@ -130,11 +139,9 @@ type PageProps = AppPageProps<{
     productId: number | null;
 }>;
 
-type VariantFormRow = {
+type VariantFormRow = VariantPricingRow & {
     id?: number;
     sku: string;
-    price: string;
-    stock: number;
     size: string;
     color: string;
     color_hex: string;
@@ -209,7 +216,11 @@ function isHostedEmbedVideoUrl(url: string): boolean {
 function emptyVariantRow(isDefault: boolean): VariantFormRow {
     return {
         sku: '',
-        price: '',
+        cost: '',
+        mrp: '',
+        discountPercent: '0',
+        finalPrice: '',
+        is_active: true,
         stock: 0,
         size: '',
         color: '',
@@ -271,7 +282,12 @@ function mapVariantToRow(
     return {
         id: v.id,
         sku: v.sku,
-        price: String(v.price),
+        cost: v.cost != null ? String(v.cost) : '',
+        mrp: v.compare_at_price != null ? String(v.compare_at_price) : '',
+        discountPercent:
+            v.discount_percent != null ? String(v.discount_percent) : '0',
+        finalPrice: String(v.price),
+        is_active: v.is_active !== false,
         stock: v.stock_quantity,
         size: v.size ?? '',
         color,
@@ -747,7 +763,13 @@ export default function Form() {
         const variantsPayload = variants.map((v) => ({
             ...(v.id ? { id: v.id } : {}),
             sku: v.sku.trim(),
-            price: Number(v.price),
+            cost: Number(v.cost) || 0,
+            compare_at_price: Number(v.mrp) || null,
+            list_price: Number(v.mrp) || null,
+            discount_percent: Number(v.discountPercent) || 0,
+            commission_percent: 0,
+            price: Number(v.finalPrice),
+            is_active: v.is_active,
             stock_quantity: Number(v.stock) || 0,
             size: normalizeVariantSizeForApi(v.size),
             color: v.color.trim() || null,
@@ -1080,66 +1102,6 @@ export default function Form() {
                                                 />
                                                 <AdminFieldError message={variantFieldErrors(index)?.sku} />
                                             </div>
-                                            <div>
-                                                <label
-                                                    className={adminLabel}
-                                                >
-                                                    Price *
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min={0}
-                                                    value={row.price}
-                                                    onChange={(e) => {
-                                                        clearVariantFieldError(index, 'price');
-                                                        setVariants((rows) =>
-                                                            rows.map((r, i) =>
-                                                                i === index
-                                                                    ? {
-                                                                          ...r,
-                                                                          price: e
-                                                                              .target
-                                                                              .value,
-                                                                      }
-                                                                    : r,
-                                                            ),
-                                                        );
-                                                    }}
-                                                    required
-                                                    className={adminInput}
-                                                />
-                                                <AdminFieldError message={variantFieldErrors(index)?.price} />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    className={adminLabel}
-                                                >
-                                                    Stock
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    value={row.stock}
-                                                    onChange={(e) =>
-                                                        setVariants((rows) =>
-                                                            rows.map((r, i) =>
-                                                                i === index
-                                                                    ? {
-                                                                          ...r,
-                                                                          stock: Number(
-                                                                              e
-                                                                                  .target
-                                                                                  .value,
-                                                                          ),
-                                                                      }
-                                                                    : r,
-                                                            ),
-                                                        )
-                                                    }
-                                                    className={adminInput}
-                                                />
-                                            </div>
                                             <div data-error-field={`variant-${index}-size`}>
                                                 <label
                                                     className={adminLabel}
@@ -1322,6 +1284,25 @@ export default function Form() {
                                                 />
                                             </div>
                                         </div>
+                                        <VariantPricingGrid
+                                            row={row}
+                                            onChange={(next) => {
+                                                clearVariantFieldError(
+                                                    index,
+                                                    'price',
+                                                );
+                                                setVariants((rows) =>
+                                                    rows.map((r, i) =>
+                                                        i === index
+                                                            ? { ...r, ...next }
+                                                            : r,
+                                                    ),
+                                                );
+                                            }}
+                                            priceError={
+                                                variantFieldErrors(index)?.price
+                                            }
+                                        />
                                         <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700" data-error-field={`variant-${index}-media`}>
                                             <VariantMediaToggle
                                                 open={variantMediaOpen[index] ?? false}

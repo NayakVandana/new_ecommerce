@@ -242,7 +242,7 @@ class CatalogController extends Controller
                     'brand',
                     'gender',
                     'subcategory.category',
-                    'variants',
+                    'variants' => fn ($q) => $q->where('is_active', true),
                     'images' => fn ($q) => $q
                         ->whereNull('product_variant_id')
                         ->orderByDesc('is_primary')
@@ -290,6 +290,9 @@ class CatalogController extends Controller
             $query->orderByDesc('is_featured')->orderByDesc('created_at');
 
             $products = $query->paginate($perPage, ['*'], 'page', $currentPage);
+            $products->setCollection(
+                $products->getCollection()->map(fn (Product $product) => $this->transformCatalogProduct($product)),
+            );
 
             return $this->sendJsonResponse(true, 'Products fetched successfully.', $products, 200);
         } catch (Exception $e) {
@@ -314,6 +317,7 @@ class CatalogController extends Controller
                     'brand',
                     'gender',
                     'subcategory.category',
+                    'variants' => fn ($q) => $q->where('is_active', true),
                     'variants.images' => fn ($q) => $q
                         ->orderByDesc('is_primary')
                         ->orderBy('sort_order'),
@@ -342,10 +346,34 @@ class CatalogController extends Controller
                 return $this->sendJsonResponse(false, 'Product not found.', null, 200);
             }
 
-            return $this->sendJsonResponse(true, 'Product fetched successfully.', $product, 200);
+            return $this->sendJsonResponse(true, 'Product fetched successfully.', $this->transformCatalogProduct($product), 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    private function transformCatalogProduct(Product $product): array
+    {
+        $data = $product->toArray();
+        $data['variants'] = $product->variants
+            ->filter(fn ($variant) => $variant->is_active)
+            ->values()
+            ->map(function ($variant) {
+                $row = $variant->toStorefrontArray();
+                $row['images'] = $variant->images
+                    ->map(fn ($image) => [
+                        'path' => $image->path,
+                        'alt_text' => $image->alt_text,
+                        'is_primary' => $image->is_primary,
+                    ])
+                    ->values()
+                    ->all();
+
+                return $row;
+            })
+            ->all();
+
+        return $data;
     }
 
     private function applyCatalogScopeFilters($query, Request $request): void

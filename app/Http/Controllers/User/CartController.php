@@ -45,7 +45,12 @@ class CartController extends Controller
                 ->with('product')
                 ->find($request->input('product_variant_id'));
 
-            if (! $variant || ! $variant->product || $variant->product->status !== 'published') {
+            if (
+                ! $variant
+                || ! $variant->is_active
+                || ! $variant->product
+                || $variant->product->status !== 'published'
+            ) {
                 return $this->sendJsonResponse(false, 'Product is not available.', null, 200);
             }
 

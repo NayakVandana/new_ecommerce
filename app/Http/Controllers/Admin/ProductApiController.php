@@ -10,6 +10,7 @@ use App\Models\ProductVideo;
 use App\Services\Admin\ProductFormLoaderService;
 use App\Services\Admin\ProductFormMetaService;
 use App\Support\StoreCatalog;
+use App\Support\VariantPricing;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -99,13 +100,118 @@ class ProductApiController extends Controller
                     'total_stock',
                     (int) $product->variants->sum('stock_quantity'),
                 );
+                $product->setAttribute(
+                    'variants',
+                    $product->variants
+                        ->map(fn (ProductVariant $v) => $this->variantForAdminList($v))
+                        ->values()
+                        ->all(),
+                );
                 $product->unsetRelation('images');
-                $product->variants->each(fn ($v) => $v->unsetRelation('images'));
 
                 return $product;
             });
 
             return $this->sendJsonResponse(true, 'Products fetched successfully.', $products, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postProductVariantsList(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'per_page' => ['nullable', 'integer'],
+                'current_page' => ['nullable', 'integer'],
+                'keyword' => ['nullable', 'string'],
+                'status' => ['nullable', 'string', 'in:draft,published,archived'],
+                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $perPage = $request->input('per_page') ? (int) $request->input('per_page') : 20;
+            $currentPage = $request->input('current_page') ? (int) $request->input('current_page') : 1;
+
+            $query = ProductVariant::query()
+                ->with([
+                    'product.brand',
+                    'product.subcategory.category',
+                    'product.images' => fn ($q) => $q
+                        ->whereNull('product_variant_id')
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order')
+                        ->orderBy('id')
+                        ->limit(1),
+                    'images' => fn ($q) => $q
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order')
+                        ->orderBy('id')
+                        ->limit(1),
+                ])
+                ->whereHas('product', function ($pq) use ($request) {
+                    if ($request->filled('status')) {
+                        $pq->where('status', $request->input('status'));
+                    }
+
+                    if ($request->filled('brand_id')) {
+                        $pq->where('brand_id', $request->input('brand_id'));
+                    }
+
+                    if (StoreCatalog::womenOnly()) {
+                        $womenId = StoreCatalog::womenGenderId();
+                        if ($womenId) {
+                            $pq->where('gender_id', $womenId);
+                        }
+                    }
+                })
+                ->orderByDesc(
+                    Product::select('created_at')
+                        ->whereColumn('products.id', 'product_variants.product_id')
+                        ->limit(1),
+                )
+                ->orderByDesc('is_default')
+                ->orderBy('id');
+
+            if ($request->filled('keyword')) {
+                $keyword = $request->input('keyword');
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('sku', 'like', '%'.$keyword.'%')
+                        ->orWhereHas('product', function ($pq) use ($keyword) {
+                            $pq->where('name', 'like', '%'.$keyword.'%')
+                                ->orWhere('slug', 'like', '%'.$keyword.'%')
+                                ->orWhere('base_sku', 'like', '%'.$keyword.'%');
+                        });
+                });
+            }
+
+            $variants = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            $variants->getCollection()->transform(function (ProductVariant $variant) {
+                $product = $variant->product;
+                $img = $variant->images->first() ?? $product->images->first();
+                $thumbUrl = null;
+                if ($img && $img->path) {
+                    $thumbUrl = $this->resolveImagePublicUrl($img->path, $img->disk);
+                }
+
+                return [
+                    'product' => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => $product->slug,
+                        'status' => $product->status,
+                        'thumb_url' => $thumbUrl,
+                        'brand' => $product->brand ? ['name' => $product->brand->name] : null,
+                    ],
+                    'variant' => $this->variantForAdminList($variant),
+                ];
+            });
+
+            return $this->sendJsonResponse(true, 'Product variants fetched successfully.', $variants, 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
@@ -182,6 +288,12 @@ class ProductApiController extends Controller
                 $rules['variants'] = ['required', 'array', 'min:1'];
                 $rules['variants.*.sku'] = ['required', 'string', 'max:255', 'distinct'];
                 $rules['variants.*.price'] = ['required', 'numeric', 'min:0'];
+                $rules['variants.*.cost'] = ['nullable', 'numeric', 'min:0'];
+                $rules['variants.*.compare_at_price'] = ['nullable', 'numeric', 'min:0'];
+                $rules['variants.*.list_price'] = ['nullable', 'numeric', 'min:0'];
+                $rules['variants.*.discount_percent'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+                $rules['variants.*.commission_percent'] = ['nullable', 'numeric', 'min:0', 'max:100'];
+                $rules['variants.*.is_active'] = ['nullable', 'boolean'];
                 $rules['variants.*.stock_quantity'] = ['nullable', 'integer', 'min:0'];
                 $rules['variants.*.size'] = ['nullable', 'string', 'max:50'];
                 $rules['variants.*.color'] = ['nullable', 'string', 'max:50'];
@@ -248,17 +360,9 @@ class ProductApiController extends Controller
                 if ($useVariantsArray) {
                     $createdVariantModels = [];
                     foreach ($variantsInput as $row) {
-                        $createdVariantModels[] = ProductVariant::query()->create([
-                            'product_id' => $product->id,
-                            'sku' => $row['sku'],
-                            'price' => $row['price'],
-                            'stock_quantity' => $row['stock_quantity'] ?? 0,
-                            'size' => $row['size'] ?? null,
-                            'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
-                            'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
-                            'barcode' => $row['barcode'] ?? null,
-                            'is_default' => (bool) ($row['is_default'] ?? false),
-                        ]);
+                        $createdVariantModels[] = ProductVariant::query()->create(
+                            $this->variantAttributesFromRow($row, $product->id),
+                        );
                     }
                     $this->normalizeSingleDefaultVariant($product);
                     foreach ($createdVariantModels as $i => $v) {
@@ -373,6 +477,12 @@ class ProductApiController extends Controller
                 'variants.*.id' => ['nullable', 'integer'],
                 'variants.*.sku' => ['required_with:variants', 'string', 'max:255'],
                 'variants.*.price' => ['required_with:variants', 'numeric', 'min:0'],
+                'variants.*.cost' => ['nullable', 'numeric', 'min:0'],
+                'variants.*.compare_at_price' => ['nullable', 'numeric', 'min:0'],
+                'variants.*.list_price' => ['nullable', 'numeric', 'min:0'],
+                'variants.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'variants.*.commission_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'variants.*.is_active' => ['nullable', 'boolean'],
                 'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
                 'variants.*.size' => ['nullable', 'string', 'max:50'],
                 'variants.*.color' => ['nullable', 'string', 'max:50'],
@@ -501,32 +611,15 @@ class ProductApiController extends Controller
                                 ->whereKey($vid)
                                 ->first();
                             if ($v) {
-                                $v->update([
-                                    'sku' => $row['sku'],
-                                    'price' => $row['price'],
-                                    'stock_quantity' => $row['stock_quantity'] ?? 0,
-                                    'size' => $row['size'] ?? null,
-                                    'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
-                                    'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
-                                    'barcode' => $row['barcode'] ?? null,
-                                    'is_default' => (bool) ($row['is_default'] ?? false),
-                                ]);
+                                $v->update($this->variantAttributesFromRow($row, $product->id, false));
                                 $resolvedVariants[] = $v;
                             } else {
                                 $resolvedVariants[] = null;
                             }
                         } else {
-                            $resolvedVariants[] = ProductVariant::query()->create([
-                                'product_id' => $product->id,
-                                'sku' => $row['sku'],
-                                'price' => $row['price'],
-                                'stock_quantity' => $row['stock_quantity'] ?? 0,
-                                'size' => $row['size'] ?? null,
-                                'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
-                                'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
-                                'barcode' => $row['barcode'] ?? null,
-                                'is_default' => (bool) ($row['is_default'] ?? false),
-                            ]);
+                            $resolvedVariants[] = ProductVariant::query()->create(
+                                $this->variantAttributesFromRow($row, $product->id),
+                            );
                         }
                     }
                     $this->normalizeSingleDefaultVariant($product->fresh());
@@ -869,5 +962,76 @@ class ProductApiController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function variantForAdminList(ProductVariant $variant): array
+    {
+        $presentation = VariantPricing::presentation(
+            $variant->cost !== null ? (float) $variant->cost : null,
+            $variant->compare_at_price !== null ? (float) $variant->compare_at_price : null,
+            $variant->list_price !== null ? (float) $variant->list_price : null,
+            (float) $variant->price,
+            $variant->discount_percent !== null ? (float) $variant->discount_percent : null,
+            $variant->commission_percent !== null ? (float) $variant->commission_percent : null,
+        );
+
+        $profit = VariantPricing::round($presentation['final_price'] - $presentation['cost']);
+        $margin = $presentation['final_price'] > 0
+            ? VariantPricing::round(($profit / $presentation['final_price']) * 100)
+            : 0;
+
+        return [
+            'id' => $variant->id,
+            'sku' => $variant->sku,
+            'size' => $variant->size,
+            'color' => $variant->color,
+            'color_hex' => $variant->color_hex,
+            'stock_quantity' => $variant->stock_quantity,
+            'is_default' => $variant->is_default,
+            'is_active' => $variant->is_active,
+            'cost' => (float) $presentation['cost'],
+            'mrp' => $presentation['mrp'] !== null ? (float) $presentation['mrp'] : null,
+            'final_price' => (float) $presentation['final_price'],
+            'discount_percent' => (float) $presentation['discount_percent'],
+            'profit_per_unit' => (float) $profit,
+            'profit_margin' => (float) $margin,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function variantAttributesFromRow(array $row, int $productId, bool $includeProductId = true): array
+    {
+        $pricing = VariantPricing::normalizeIncomingRow($row);
+
+        $attributes = [
+            'sku' => $row['sku'],
+            'price' => $pricing['price'],
+            'compare_at_price' => $pricing['compare_at_price'],
+            'list_price' => $pricing['list_price'],
+            'cost' => $pricing['cost'],
+            'discount_percent' => $pricing['discount_percent'],
+            'commission_percent' => $pricing['commission_percent'],
+            'stock_quantity' => (int) ($row['stock_quantity'] ?? 0),
+            'size' => $row['size'] ?? null,
+            'color' => isset($row['color']) ? (trim((string) $row['color']) ?: null) : null,
+            'color_hex' => $this->normalizeVariantColorHex($row['color_hex'] ?? null),
+            'barcode' => $row['barcode'] ?? null,
+            'is_default' => (bool) ($row['is_default'] ?? false),
+            'is_active' => array_key_exists('is_active', $row)
+                ? (bool) $row['is_active']
+                : true,
+        ];
+
+        if ($includeProductId) {
+            $attributes['product_id'] = $productId;
+        }
+
+        return $attributes;
     }
 }

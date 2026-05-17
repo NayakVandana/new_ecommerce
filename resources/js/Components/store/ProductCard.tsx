@@ -1,7 +1,7 @@
 import { cartStore } from '@/api/cartClient';
 import type { CatalogProduct } from '@/store/catalogTypes';
+import StorePriceDisplay from '@/Components/store/StorePriceDisplay';
 import {
-    formatStorePrice,
     pickVariant,
     productPrimaryImage,
     variantLabel,
@@ -106,9 +106,10 @@ export default function ProductCard({ product, compact = false }: Props) {
                     {product.name}
                 </Link>
                 {activeVariant ? (
-                    <p className="mt-2 text-base font-bold text-slate-900 dark:text-white">
-                        {formatStorePrice(activeVariant.price)}
-                    </p>
+                    <StorePriceDisplay
+                        variant={activeVariant}
+                        className="mt-2"
+                    />
                 ) : null}
 
                 {!compact && variants.length > 1 ? (

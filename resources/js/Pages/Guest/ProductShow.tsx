@@ -1,13 +1,12 @@
 import { cartStore } from '@/api/cartClient';
 import { catalogProductShow } from '@/api/catalogClient';
 import { recentlyViewedStore } from '@/api/recentlyViewedClient';
+import ProductImageSlider from '@/Components/store/ProductImageSlider';
+import VariantPicker from '@/Components/store/VariantPicker';
 import type { CatalogProduct, CatalogVariant } from '@/store/catalogTypes';
 import {
-    formatStorePrice,
     pickVariant,
-    productImageSrc,
-    productPrimaryImage,
-    variantLabel,
+    variantGalleryImages,
 } from '@/store/productUtils';
 import {
     storeBtnPrimary,
@@ -15,8 +14,6 @@ import {
     storeCard,
     storeErrorBanner,
     storeHeroBtn,
-    storeInput,
-    storeLabel,
     storeMutedText,
 } from '@/store/storeTheme';
 import WishlistToggleButton from '@/Components/store/WishlistToggleButton';
@@ -24,7 +21,7 @@ import GuestPanelLayout from '@/Layouts/Guest/GuestPanelLayout';
 import { redirectToLogin } from '@/utils/requireAuth';
 import { useAuthUser } from '@/auth/useAuthUser';
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function ProductShow({ productSlug }: { productSlug: string }) {
     const { isLoggedIn } = useAuthUser();
@@ -65,10 +62,17 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
 
     const variants = product?.variants ?? [];
     const activeVariant: CatalogVariant | null =
-        variants.find((v) => v.id === variantId) ?? (product ? pickVariant(product) : null);
-    const gallery =
-        product?.images?.map((img) => productImageSrc(img.path)).filter(Boolean) ?? [];
-    const heroImage = gallery[0] || (product ? productPrimaryImage(product) : '');
+        variants.find((v) => v.id === variantId) ??
+        (product ? pickVariant(product) : null);
+
+    const gallery = useMemo(
+        () =>
+            product
+                ? variantGalleryImages(product, activeVariant)
+                : [],
+        [product, activeVariant],
+    );
+
     const outOfStock = !activeVariant || activeVariant.stock_quantity < 1;
 
     const addToCart = async (goCheckout: boolean) => {
@@ -122,37 +126,31 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
 
             {!loading && product ? (
                 <div className="grid gap-6 sm:gap-10 lg:grid-cols-2">
-                    <div className="space-y-3">
-                        <div className="relative aspect-[3/4] overflow-hidden bg-stone-200 sm:aspect-square dark:bg-stone-800">
-                            {activeVariant ? (
+                    <div className="relative">
+                        {activeVariant ? (
+                            <div className="absolute right-3 top-3 z-10">
                                 <WishlistToggleButton
                                     productVariantId={activeVariant.id}
                                     overlay
                                 />
-                            ) : null}
-                            {heroImage ? (
-                                <img
-                                    src={heroImage}
-                                    alt={product.name}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-full items-center justify-center text-slate-400">
-                                    No image
-                                </div>
-                            )}
-                        </div>
-                        {gallery.length > 1 ? (
-                            <div className="flex gap-2 overflow-x-auto">
-                                {gallery.map((src) => (
-                                    <img
-                                        key={src}
-                                        src={src}
-                                        alt=""
-                                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
-                                    />
-                                ))}
                             </div>
+                        ) : null}
+                        <ProductImageSlider
+                            images={gallery}
+                            productName={product.name}
+                            resetKey={activeVariant?.id ?? 0}
+                        />
+                        {activeVariant && gallery.length > 0 ? (
+                            <p className={`mt-2 ${storeMutedText} text-center text-xs sm:text-left`}>
+                                Showing {gallery.length} photo
+                                {gallery.length === 1 ? '' : 's'} for{' '}
+                                <span className="font-medium text-stone-700 dark:text-stone-300">
+                                    {activeVariant.size ?? activeVariant.sku}
+                                    {activeVariant.color
+                                        ? ` · ${activeVariant.color}`
+                                        : ''}
+                                </span>
+                            </p>
                         ) : null}
                     </div>
 
@@ -167,12 +165,8 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
                         </h1>
                         {product.subcategory?.category ? (
                             <p className={`mt-2 ${storeMutedText}`}>
-                                {product.subcategory.category.name} · {product.subcategory.name}
-                            </p>
-                        ) : null}
-                        {activeVariant ? (
-                            <p className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">
-                                {formatStorePrice(activeVariant.price)}
+                                {product.subcategory.category.name} ·{' '}
+                                {product.subcategory.name}
                             </p>
                         ) : null}
 
@@ -180,23 +174,13 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
                             <p className={`mt-4 ${storeMutedText}`}>{product.summary}</p>
                         ) : null}
 
-                        {variants.length > 0 ? (
-                            <label className="mt-6 block">
-                                <span className={storeLabel}>Variant</span>
-                                <select
-                                    value={variantId}
-                                    onChange={(e) => setVariantId(Number(e.target.value))}
-                                    className={`${storeInput} mt-2 max-w-md`}
-                                >
-                                    {variants.map((v) => (
-                                        <option key={v.id} value={v.id}>
-                                            {variantLabel(v)} — {formatStorePrice(v.price)}
-                                            {v.stock_quantity < 1 ? ' (out of stock)' : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                        ) : null}
+                        <VariantPicker
+                            product={product}
+                            variants={variants}
+                            activeVariant={activeVariant}
+                            variantId={variantId}
+                            onSelect={setVariantId}
+                        />
 
                         {toast ? (
                             <p className="mt-4 text-sm font-medium text-emerald-600 dark:text-emerald-400">

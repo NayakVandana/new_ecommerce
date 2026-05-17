@@ -21,11 +21,15 @@ class ProductVariant extends Model
         'color_hex',
         'price',
         'compare_at_price',
+        'list_price',
         'cost',
+        'discount_percent',
+        'commission_percent',
         'stock_quantity',
         'low_stock_threshold',
         'weight_kg',
         'is_default',
+        'is_active',
     ];
 
     protected function casts(): array
@@ -33,11 +37,45 @@ class ProductVariant extends Model
         return [
             'price' => 'decimal:2',
             'compare_at_price' => 'decimal:2',
+            'list_price' => 'decimal:2',
             'cost' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
+            'commission_percent' => 'decimal:2',
             'weight_kg' => 'decimal:3',
             'stock_quantity' => 'integer',
             'low_stock_threshold' => 'integer',
             'is_default' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toStorefrontArray(): array
+    {
+        $presentation = \App\Support\VariantPricing::presentation(
+            $this->cost !== null ? (float) $this->cost : null,
+            $this->compare_at_price !== null ? (float) $this->compare_at_price : null,
+            $this->list_price !== null ? (float) $this->list_price : null,
+            (float) $this->price,
+            $this->discount_percent !== null ? (float) $this->discount_percent : null,
+            $this->commission_percent !== null ? (float) $this->commission_percent : null,
+        );
+
+        return [
+            'id' => $this->id,
+            'sku' => $this->sku,
+            'price' => $this->price,
+            'compare_at_price' => $presentation['mrp'],
+            'list_price' => $presentation['list_price'],
+            'discount_percent' => $presentation['discount_percent'],
+            'size' => $this->size,
+            'color' => $this->color,
+            'color_hex' => $this->color_hex,
+            'stock_quantity' => $this->stock_quantity,
+            'is_default' => $this->is_default,
+            'is_active' => $this->is_active,
         ];
     }
 

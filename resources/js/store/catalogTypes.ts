@@ -17,10 +17,15 @@ export type CatalogVariant = {
     id: number;
     sku: string;
     price: string | number;
+    compare_at_price?: string | number | null;
+    list_price?: string | number | null;
+    discount_percent?: string | number | null;
     size?: string | null;
     color?: string | null;
+    color_hex?: string | null;
     stock_quantity: number;
     is_default?: boolean;
+    is_active?: boolean;
     images?: { path: string }[];
 };
 

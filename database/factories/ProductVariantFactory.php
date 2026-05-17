@@ -29,6 +29,10 @@ class ProductVariantFactory extends Factory
             'low_stock_threshold' => 5,
             'weight_kg' => fake()->randomFloat(3, 0.1, 5),
             'is_default' => false,
+            'list_price' => $price,
+            'discount_percent' => 0,
+            'commission_percent' => 0,
+            'is_active' => true,
         ];
     }
 }

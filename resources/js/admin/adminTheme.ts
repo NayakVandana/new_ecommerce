@@ -199,6 +199,18 @@ export const adminBadgeDraft =
 export const adminBadgeArchived =
     'inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold capitalize text-amber-950 ring-1 ring-amber-200/90 dark:bg-amber-950/50 dark:text-amber-200 dark:ring-amber-900/50';
 
+const adminScrollX =
+    'overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+export const adminTabList =
+    `${adminScrollX} flex gap-1 rounded-xl border border-slate-200/90 bg-slate-100/80 p-1 dark:border-slate-700 dark:bg-slate-800/60`;
+
+export const adminTabBtnActive =
+    'shrink-0 whitespace-nowrap rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white';
+
+export const adminTabBtnInactive =
+    'shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100';
+
 export const adminSectionCard =
     'mt-10 w-full rounded-2xl border border-slate-200/80 bg-white p-5 shadow-lg shadow-slate-200/40 ring-1 ring-slate-100 sm:p-6 dark:border-slate-600/70 dark:bg-slate-900 dark:shadow-black/25 dark:ring-white/10';
 
