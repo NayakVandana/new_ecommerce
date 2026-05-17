@@ -72,7 +72,7 @@ export default function Index() {
         (p: number) => {
             setLoading(true);
             adminApiPost<AdminApiEnvelope<LaravelPaginator<CategoryRow>>>(
-                '/categories/list',
+                '/categories/categories-list',
                 {
                     per_page: 15,
                     current_page: p,
@@ -101,7 +101,7 @@ export default function Index() {
         if (!confirm('Delete this category and all its subcategories?')) return;
         try {
             const res = await adminApiPost<AdminApiEnvelope<unknown>>(
-                '/categories/destroy',
+                '/categories/category-destroy',
                 { id },
             );
             if (res.success) {

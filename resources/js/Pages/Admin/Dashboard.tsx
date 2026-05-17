@@ -35,7 +35,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         let cancelled = false;
-        adminApiPost<AdminApiEnvelope<Stats>>('/dashboard/stats', {})
+        adminApiPost<AdminApiEnvelope<Stats>>('/dashboard/dashboard-stats', {})
             .then((res) => {
                 if (cancelled) return;
                 if (res.success && res.data) {

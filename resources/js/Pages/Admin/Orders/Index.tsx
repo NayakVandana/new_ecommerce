@@ -74,7 +74,7 @@ export default function Index() {
 
     useEffect(() => {
         adminApiPost<AdminApiEnvelope<{ statuses: StatusOption[] }>>(
-            '/orders/meta',
+            '/orders/orders-meta',
             {},
         )
             .then((res) => {
@@ -89,7 +89,7 @@ export default function Index() {
         (p: number) => {
             setLoading(true);
             adminApiPost<AdminApiEnvelope<LaravelPaginator<OrderRow>>>(
-                '/orders/list',
+                '/orders/orders-list',
                 {
                     per_page: 15,
                     current_page: p,

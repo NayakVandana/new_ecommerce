@@ -31,7 +31,7 @@ export default function Login() {
         setError(null);
         try {
             const res = await axios.post<AdminApiEnvelope<LoginPayload>>(
-                '/api/v1/admin/auth/login',
+                '/api/v1/admin/auth/admin-login',
                 {
                     email,
                     password,

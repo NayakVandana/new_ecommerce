@@ -20,7 +20,7 @@ async function fetchProfile(): Promise<User | null> {
     }
 
     try {
-        const res = await userApiPost<UserApiEnvelope<User>>('/profile/show', {});
+        const res = await userApiPost<UserApiEnvelope<User>>('/profile/profile-show', {});
 
         if (res.success && res.data) {
             cachedUser = res.data as User;
@@ -82,7 +82,7 @@ export function useAuthUser() {
     const logout = useCallback(async () => {
         try {
             if (getUserApiToken()) {
-                await userApiPost('/auth/logout', {});
+                await userApiPost('/auth/user-logout', {});
             }
         } catch {
             // ignore

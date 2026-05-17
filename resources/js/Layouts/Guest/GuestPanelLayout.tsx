@@ -5,7 +5,7 @@ import FashionLogo from '@/Components/store/FashionLogo';
 import StoreFixedHeader from '@/Components/store/StoreFixedHeader';
 import StoreFooter from '@/Components/store/StoreFooter';
 import AppearanceSync from '@/Components/AppearanceSync';
-import { useWomenStore } from '@/hooks/useWomenStore';
+import { useWomenStore, WomenStoreProvider } from '@/hooks/useWomenStore';
 import { catalogUrl, catalogUrlForCategory } from '@/store/fashionBrand';
 import {
     storeBtnCompact,
@@ -39,6 +39,17 @@ function categoryChipClass(active: boolean) {
 }
 
 export default function GuestPanelLayout({
+    children,
+    title,
+}: PropsWithChildren<{ title?: string }>) {
+    return (
+        <WomenStoreProvider>
+            <GuestPanelLayoutContent title={title}>{children}</GuestPanelLayoutContent>
+        </WomenStoreProvider>
+    );
+}
+
+function GuestPanelLayoutContent({
     children,
     title,
 }: PropsWithChildren<{ title?: string }>) {

@@ -7,19 +7,19 @@ use App\Http\Controllers\User\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->prefix('v1/user')->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::post('/profile/show', [ProfileController::class, 'postShow']);
-    Route::post('/profile/update', [ProfileController::class, 'postUpdate']);
-    Route::post('/profile/appearance', [ProfileController::class, 'postAppearanceUpdate']);
+    Route::post('/auth/user-logout', [AuthController::class, 'logout']);
+    Route::post('/profile/profile-show', [ProfileController::class, 'postShow']);
+    Route::post('/profile/profile-update', [ProfileController::class, 'postUpdate']);
+    Route::post('/profile/profile-appearance', [ProfileController::class, 'postAppearanceUpdate']);
 
-    Route::post('/checkout/options', [OrderController::class, 'postCheckoutOptions']);
-    Route::post('/checkout/place', [OrderController::class, 'postCheckout']);
-    Route::post('/orders/list', [OrderController::class, 'postOrdersList']);
-    Route::post('/orders/show', [OrderController::class, 'postOrderShow']);
+    Route::post('/checkout/checkout-options', [OrderController::class, 'postCheckoutOptions']);
+    Route::post('/checkout/checkout-place', [OrderController::class, 'postCheckout']);
+    Route::post('/orders/orders-list', [OrderController::class, 'postOrdersList']);
+    Route::post('/orders/order-show', [OrderController::class, 'postOrderShow']);
 
-    Route::post('/cart/list', [CartController::class, 'postCartList']);
-    Route::post('/cart/add', [CartController::class, 'postCartAdd']);
-    Route::post('/cart/update', [CartController::class, 'postCartUpdate']);
-    Route::post('/cart/remove', [CartController::class, 'postCartRemove']);
-    Route::post('/cart/clear', [CartController::class, 'postCartClear']);
+    Route::post('/cart/cart-list', [CartController::class, 'postCartList']);
+    Route::post('/cart/cart-add', [CartController::class, 'postCartAdd']);
+    Route::post('/cart/cart-update', [CartController::class, 'postCartUpdate']);
+    Route::post('/cart/cart-remove', [CartController::class, 'postCartRemove']);
+    Route::post('/cart/cart-clear', [CartController::class, 'postCartClear']);
 });

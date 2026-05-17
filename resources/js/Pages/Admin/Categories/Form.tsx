@@ -70,7 +70,7 @@ export default function Form() {
             return;
         }
         const res = await adminApiPost<AdminApiEnvelope<Category>>(
-            '/categories/show',
+            '/categories/category-show',
             { id: categoryId },
         );
         if (res.success && res.data) {
@@ -94,7 +94,7 @@ export default function Form() {
             setLoadError(null);
             try {
                 const res = await adminApiPost<AdminApiEnvelope<Category>>(
-                    '/categories/show',
+                    '/categories/category-show',
                     { id: categoryId },
                 );
                 if (cancelled) {
@@ -175,7 +175,7 @@ export default function Form() {
 
             if (existing) {
                 const res = await adminApiPost<AdminApiEnvelope<Category>>(
-                    '/categories/update',
+                    '/categories/category-update',
                     { id: existing.id, ...payload },
                 );
                 if (!res.success) {
@@ -186,7 +186,7 @@ export default function Form() {
                 router.visit(route('admin.categories.index'));
             } else {
                 const res = await adminApiPost<AdminApiEnvelope<Category>>(
-                    '/categories/store',
+                    '/categories/category-store',
                     payload,
                 );
                 if (!res.success || !res.data?.id) {
@@ -210,7 +210,7 @@ export default function Form() {
         setError(null);
         try {
             const res = await adminApiPost<AdminApiEnvelope<SubcategoryRow>>(
-                '/subcategories/store',
+                '/subcategories/subcategory-store',
                 {
                     category_id: existing.id,
                     name: subName,
@@ -242,7 +242,7 @@ export default function Form() {
         setError(null);
         try {
             const res = await adminApiPost<AdminApiEnvelope<SubcategoryRow>>(
-                '/subcategories/update',
+                '/subcategories/subcategory-update',
                 {
                     id: editingSub.id,
                     name: editingSub.name,
@@ -271,7 +271,7 @@ export default function Form() {
         setError(null);
         try {
             const res = await adminApiPost<AdminApiEnvelope<unknown>>(
-                '/subcategories/destroy',
+                '/subcategories/subcategory-destroy',
                 { id },
             );
             if (!res.success) {

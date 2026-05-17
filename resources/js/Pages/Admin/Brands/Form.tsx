@@ -77,7 +77,7 @@ export default function Form() {
             setLoadError(null);
             try {
                 const res = await adminApiPost<AdminApiEnvelope<Brand>>(
-                    '/brands/show',
+                    '/brands/brand-show',
                     { id: brandId },
                 );
                 if (cancelled) {
@@ -131,12 +131,12 @@ export default function Form() {
             let res: AdminApiEnvelope<Brand>;
 
             if (existing) {
-                res = await adminApiPost<AdminApiEnvelope<Brand>>('/brands/update', {
+                res = await adminApiPost<AdminApiEnvelope<Brand>>('/brands/brand-update', {
                     id: existing.id,
                     ...payload,
                 });
             } else {
-                res = await adminApiPost<AdminApiEnvelope<Brand>>('/brands/store', payload);
+                res = await adminApiPost<AdminApiEnvelope<Brand>>('/brands/brand-store', payload);
             }
 
             if (!res.success) {

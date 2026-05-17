@@ -113,7 +113,7 @@ export default function Index() {
         (p: number) => {
             setLoading(true);
             adminApiPost<AdminApiEnvelope<LaravelPaginator<ProductRow>>>(
-                '/products/list',
+                '/products/products-list',
                 {
                     per_page: 15,
                     current_page: p,
@@ -142,7 +142,7 @@ export default function Index() {
         if (!confirm('Archive this product?')) return;
         try {
             const res = await adminApiPost<AdminApiEnvelope<unknown>>(
-                '/products/destroy',
+                '/products/product-destroy',
                 { id },
             );
             if (res.success) {

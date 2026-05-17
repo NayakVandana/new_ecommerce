@@ -42,7 +42,7 @@ export default function Register({
         setErrors({});
 
         try {
-            const res = await axios.post<RegisterResponse>('/api/v1/auth/register', {
+            const res = await axios.post<RegisterResponse>('/api/v1/auth/auth-register', {
                 name,
                 email,
                 password,

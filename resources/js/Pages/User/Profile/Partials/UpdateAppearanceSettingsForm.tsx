@@ -69,7 +69,7 @@ export default function UpdateAppearanceSettingsForm({
 
         try {
             const res = await userApiPost<UserApiEnvelope<User>>(
-                '/profile/appearance',
+                '/profile/profile-appearance',
                 { theme_preference: value },
             );
 

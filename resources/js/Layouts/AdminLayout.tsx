@@ -248,7 +248,7 @@ function AdminLayout({
         if (loggingOut) return;
         setLoggingOut(true);
         try {
-            await adminApiPost('/auth/logout', {});
+            await adminApiPost('/auth/admin-logout', {});
         } finally {
             setAdminApiToken(null);
             router.visit(route('admin.login'));

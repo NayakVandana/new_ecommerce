@@ -92,7 +92,7 @@ export default function Index() {
         (p: number) => {
             setLoading(true);
             adminApiPost<AdminApiEnvelope<LaravelPaginator<UserRow>>>(
-                '/users/list',
+                '/users/users-list',
                 {
                     per_page: 15,
                     current_page: p,

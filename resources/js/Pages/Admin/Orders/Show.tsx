@@ -127,7 +127,7 @@ export default function Show() {
         setError(null);
         try {
             const res = await adminApiPost<AdminApiEnvelope<OrderDetail>>(
-                '/orders/show',
+                '/orders/order-show',
                 { id: orderId },
             );
             if (!res.success || !res.data) {
@@ -150,7 +150,7 @@ export default function Show() {
 
     useEffect(() => {
         adminApiPost<AdminApiEnvelope<{ statuses: StatusOption[] }>>(
-            '/orders/meta',
+            '/orders/orders-meta',
             {},
         )
             .then((res) => {

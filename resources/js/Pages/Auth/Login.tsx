@@ -44,7 +44,7 @@ export default function Login({
         setErrors({});
 
         try {
-            const res = await axios.post<LoginResponse>('/api/v1/auth/login', {
+            const res = await axios.post<LoginResponse>('/api/v1/auth/auth-login', {
                 email,
                 password,
                 device_name: remember ? 'web-remember' : 'web',

@@ -48,7 +48,7 @@ export default function Index() {
     const load = useCallback(
         (p: number) => {
             setLoading(true);
-            userApiPost<UserApiEnvelope<Paginator>>('/orders/list', {
+            userApiPost<UserApiEnvelope<Paginator>>('/orders/orders-list', {
                 per_page: 10,
                 current_page: p,
                 ...(statusFilter ? { status: statusFilter } : {}),

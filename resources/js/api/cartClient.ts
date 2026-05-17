@@ -45,11 +45,11 @@ async function cartPost<T>(
 
 export const cartStore = {
     async list(): Promise<CartApiEnvelope<CartPayload>> {
-        return cartPost<CartApiEnvelope<CartPayload>>('/cart/list', {});
+        return cartPost<CartApiEnvelope<CartPayload>>('/cart/cart-list', {});
     },
 
     async add(productVariantId: number, quantity = 1): Promise<CartApiEnvelope<CartPayload>> {
-        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/add', {
+        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/cart-add', {
             product_variant_id: productVariantId,
             quantity,
         });
@@ -61,7 +61,7 @@ export const cartStore = {
     },
 
     async update(cartItemId: number, quantity: number): Promise<CartApiEnvelope<CartPayload>> {
-        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/update', {
+        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/cart-update', {
             cart_item_id: cartItemId,
             quantity,
         });
@@ -73,7 +73,7 @@ export const cartStore = {
     },
 
     async remove(cartItemId: number): Promise<CartApiEnvelope<CartPayload>> {
-        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/remove', {
+        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/cart-remove', {
             cart_item_id: cartItemId,
         });
         if (res.success && res.data) {
@@ -84,7 +84,7 @@ export const cartStore = {
     },
 
     async clear(): Promise<CartApiEnvelope<CartPayload>> {
-        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/clear', {});
+        const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/cart-clear', {});
         if (res.success && res.data) {
             window.dispatchEvent(new Event('cartUpdated'));
         }

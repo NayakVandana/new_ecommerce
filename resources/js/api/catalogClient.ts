@@ -20,11 +20,47 @@ export type ProductListFilters = {
     status?: string;
 };
 
+function catalogRequestCache<T>() {
+    let cached: T | null = null;
+    let inflight: Promise<T> | null = null;
+
+    return (fetcher: () => Promise<T>): Promise<T> => {
+        if (cached) {
+            return Promise.resolve(cached);
+        }
+
+        if (inflight) {
+            return inflight;
+        }
+
+        inflight = fetcher()
+            .then((data) => {
+                cached = data;
+                inflight = null;
+
+                return data;
+            })
+            .catch((error) => {
+                inflight = null;
+
+                throw error;
+            });
+
+        return inflight;
+    };
+}
+
+const gendersCache = catalogRequestCache<CatalogEnvelope<CatalogGender[]>>();
+const categoriesCache = catalogRequestCache<CatalogEnvelope<CatalogCategory[]>>();
+const brandsCache = catalogRequestCache<
+    CatalogEnvelope<CatalogPaginator<CatalogBrand>>
+>();
+
 export async function catalogProductsList(
     filters: ProductListFilters = {},
 ): Promise<CatalogEnvelope<CatalogPaginator<CatalogProduct>>> {
     const res = await axios.post<CatalogEnvelope<CatalogPaginator<CatalogProduct>>>(
-        '/api/v1/catalog/products/list',
+        '/api/v1/catalog/products/products-list',
         {
             status: 'published',
             ...filters,
@@ -38,7 +74,7 @@ export async function catalogProductShow(
     slug: string,
 ): Promise<CatalogEnvelope<CatalogProduct>> {
     const res = await axios.post<CatalogEnvelope<CatalogProduct>>(
-        '/api/v1/catalog/products/show',
+        '/api/v1/catalog/products/product-show',
         { slug },
     );
 
@@ -46,32 +82,38 @@ export async function catalogProductShow(
 }
 
 export async function catalogGendersList(): Promise<CatalogEnvelope<CatalogGender[]>> {
-    const res = await axios.post<CatalogEnvelope<CatalogGender[]>>(
-        '/api/v1/catalog/genders/list',
-        {},
-    );
+    return gendersCache(async () => {
+        const res = await axios.post<CatalogEnvelope<CatalogGender[]>>(
+            '/api/v1/catalog/genders/genders-list',
+            {},
+        );
 
-    return res.data;
+        return res.data;
+    });
 }
 
 export async function catalogBrandsList(): Promise<
     CatalogEnvelope<CatalogPaginator<CatalogBrand>>
 > {
-    const res = await axios.post<CatalogEnvelope<CatalogPaginator<CatalogBrand>>>(
-        '/api/v1/catalog/brands/list',
-        { per_page: 100, current_page: 1 },
-    );
+    return brandsCache(async () => {
+        const res = await axios.post<CatalogEnvelope<CatalogPaginator<CatalogBrand>>>(
+            '/api/v1/catalog/brands/brands-list',
+            { per_page: 100, current_page: 1 },
+        );
 
-    return res.data;
+        return res.data;
+    });
 }
 
 export async function catalogCategoriesList(): Promise<
     CatalogEnvelope<CatalogCategory[]>
 > {
-    const res = await axios.post<CatalogEnvelope<CatalogCategory[]>>(
-        '/api/v1/catalog/categories/list',
-        {},
-    );
+    return categoriesCache(async () => {
+        const res = await axios.post<CatalogEnvelope<CatalogCategory[]>>(
+            '/api/v1/catalog/categories/categories-list',
+            {},
+        );
 
-    return res.data;
+        return res.data;
+    });
 }

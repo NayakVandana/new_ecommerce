@@ -54,7 +54,7 @@ async function orderPost<T>(path: string, data: Record<string, unknown> = {}): P
 
 export const orderStore = {
     async checkoutOptions(): Promise<UserApiEnvelope<CheckoutOptions>> {
-        return orderPost<UserApiEnvelope<CheckoutOptions>>('/checkout/options', {});
+        return orderPost<UserApiEnvelope<CheckoutOptions>>('/checkout/checkout-options', {});
     },
 
     async placeOrder(payload: {
@@ -63,7 +63,7 @@ export const orderStore = {
         customer_note?: string;
         save_address?: boolean;
     }): Promise<UserApiEnvelope<CheckoutResult>> {
-        const res = await orderPost<UserApiEnvelope<CheckoutResult>>('/checkout/place', {
+        const res = await orderPost<UserApiEnvelope<CheckoutResult>>('/checkout/checkout-place', {
             ...payload,
         });
         if (res.success) {

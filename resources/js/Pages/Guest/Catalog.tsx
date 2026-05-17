@@ -1,5 +1,5 @@
 import ProductCard from '@/Components/store/ProductCard';
-import { catalogBrandsList, catalogCategoriesList, catalogProductsList } from '@/api/catalogClient';
+import { catalogBrandsList, catalogProductsList } from '@/api/catalogClient';
 import type { CatalogBrand, CatalogCategory, CatalogProduct } from '@/store/catalogTypes';
 import { useWomenStore } from '@/hooks/useWomenStore';
 import {
@@ -45,7 +45,15 @@ function readFiltersFromUrl() {
 }
 
 export default function Catalog() {
-    const { womenGenderId, shopCategories, defaultProductFilters } = useWomenStore();
+    return (
+        <GuestPanelLayout title="Shop ethnic wear">
+            <CatalogContent />
+        </GuestPanelLayout>
+    );
+}
+
+function CatalogContent() {
+    const { womenGenderId, shopCategories } = useWomenStore();
     const initial = readFiltersFromUrl();
     const [keyword, setKeyword] = useState(initial.keyword);
     const [brandId, setBrandId] = useState(initial.brandId);
@@ -89,7 +97,7 @@ export default function Catalog() {
                 setLoading(false);
             }
         },
-        [keyword, brandId, categoryId, subcategoryId, womenGenderId, featuredOnly, defaultProductFilters],
+        [keyword, brandId, categoryId, subcategoryId, womenGenderId, featuredOnly],
     );
 
     useEffect(() => {
@@ -129,7 +137,7 @@ export default function Catalog() {
     const subcategories = activeCategory?.subcategories ?? [];
 
     return (
-        <GuestPanelLayout title="Shop ethnic wear">
+        <>
             <Head title="Suhaag · Shop" />
 
             <div className="flex flex-col gap-8 lg:flex-row">
@@ -336,6 +344,6 @@ export default function Catalog() {
                     )}
                 </div>
             </div>
-        </GuestPanelLayout>
+        </>
     );
 }

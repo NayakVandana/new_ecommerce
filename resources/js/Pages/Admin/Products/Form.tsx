@@ -337,7 +337,7 @@ export default function Form() {
                 if (productId) {
                     const productRes = await adminApiPost<
                         AdminApiEnvelope<Product>
-                    >('/products/show', { id: productId });
+                    >('/products/product-show', { id: productId });
                     if (cancelled) {
                         return;
                     }
@@ -779,7 +779,7 @@ export default function Form() {
 
             if (existing) {
                 res = await adminApiPost<AdminApiEnvelope<Product>>(
-                    '/products/update',
+                    '/products/product-update',
                     {
                         id: existing.id,
                         ...payload,
@@ -787,7 +787,7 @@ export default function Form() {
                 );
             } else {
                 res = await adminApiPost<AdminApiEnvelope<Product>>(
-                    '/products/store',
+                    '/products/product-store',
                     payload,
                 );
             }

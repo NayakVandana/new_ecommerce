@@ -65,7 +65,7 @@ export default function Index() {
         (p: number) => {
             setLoading(true);
             adminApiPost<AdminApiEnvelope<LaravelPaginator<BrandRow>>>(
-                '/brands/list',
+                '/brands/brands-list',
                 {
                     per_page: 15,
                     current_page: p,
@@ -94,7 +94,7 @@ export default function Index() {
         if (!confirm('Delete this brand?')) return;
         try {
             const res = await adminApiPost<AdminApiEnvelope<unknown>>(
-                '/brands/destroy',
+                '/brands/brand-destroy',
                 { id },
             );
             if (res.success) {

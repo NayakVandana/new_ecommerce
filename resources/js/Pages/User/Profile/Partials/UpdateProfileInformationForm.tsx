@@ -36,7 +36,7 @@ export default function UpdateProfileInformation({
         setErrors({});
         try {
             const res = await userApiPost<UserApiEnvelope<unknown>>(
-                '/profile/update',
+                '/profile/profile-update',
                 {
                     name,
                     email,

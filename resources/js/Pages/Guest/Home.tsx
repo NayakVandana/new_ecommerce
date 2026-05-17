@@ -23,6 +23,14 @@ import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
+    return (
+        <GuestPanelLayout>
+            <HomeContent />
+        </GuestPanelLayout>
+    );
+}
+
+function HomeContent() {
     const { shopCategories, defaultProductFilters, ready } = useWomenStore();
     const [featured, setFeatured] = useState<CatalogProduct[]>([]);
     const [brands, setBrands] = useState<CatalogBrand[]>([]);
@@ -53,7 +61,7 @@ export default function Home() {
     }, [ready, defaultProductFilters]);
 
     return (
-        <GuestPanelLayout>
+        <>
             <Head title="Suhaag · Women's ethnic wear" />
 
             <section className={storeHero}>
@@ -179,6 +187,6 @@ export default function Home() {
                     </div>
                 ))}
             </section>
-        </GuestPanelLayout>
+        </>
     );
 }

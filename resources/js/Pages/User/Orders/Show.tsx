@@ -75,7 +75,7 @@ export default function Show() {
             setError(null);
             try {
                 const res = await userApiPost<UserApiEnvelope<OrderDetail>>(
-                    '/orders/show',
+                    '/orders/order-show',
                     { id: orderId },
                 );
                 if (cancelled) {

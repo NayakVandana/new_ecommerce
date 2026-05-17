@@ -42,7 +42,7 @@ export default function StoreThemeToggle() {
 
         try {
             const res = await userApiPost<UserApiEnvelope<User>>(
-                '/profile/appearance',
+                '/profile/profile-appearance',
                 { theme_preference: next },
             );
 
