@@ -2,6 +2,7 @@ import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import PasswordInput from '@/Components/PasswordInput';
 import TextInput from '@/Components/TextInput';
 import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import { setUserApiToken } from '@/auth/authToken';
@@ -99,9 +100,8 @@ export default function Login({
 
                 <div className="mt-4">
                     <InputLabel htmlFor="password" value="Password" />
-                    <TextInput
+                    <PasswordInput
                         id="password"
-                        type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="mt-1 block w-full"

@@ -9,6 +9,7 @@ import {
 import { type AdminApiEnvelope, setAdminApiToken } from '@/api/adminClient';
 import AdminThemeToggle from '@/admin/AdminThemeToggle';
 import AppearanceSync from '@/Components/AppearanceSync';
+import PasswordInput from '@/Components/PasswordInput';
 import axios from 'axios';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
@@ -132,9 +133,9 @@ export default function Login() {
                                 >
                                     Password
                                 </label>
-                                <input
+                                <PasswordInput
                                     id="password"
-                                    type="password"
+                                    admin
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
