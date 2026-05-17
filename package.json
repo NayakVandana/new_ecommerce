@@ -3,7 +3,9 @@
     "type": "module",
     "scripts": {
         "build": "tsc && vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "dev:force": "node scripts/clean-vite-cache.mjs && vite --force",
+        "clean:vite": "node scripts/clean-vite-cache.mjs"
     },
     "devDependencies": {
         "@headlessui/react": "^2.0.0",

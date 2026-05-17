@@ -226,6 +226,9 @@ export const storeUserNavActive =
 export const storeUserNavInactive =
     'py-3 pl-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100';
 
+export const storeUserSubNav =
+    'mb-2 ml-3 flex flex-col gap-0.5 border-l border-stone-200 pl-3 dark:border-stone-700';
+
 export const storeTableWrap =
     'overflow-x-auto border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900';
 

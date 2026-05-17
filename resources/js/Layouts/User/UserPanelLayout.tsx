@@ -22,15 +22,19 @@ import {
     storeUserTopBar,
     storeUserTopBarInner,
 } from '@/store/storeTheme';
+import {
+    isProfileSectionActive,
+    PROFILE_SECTIONS,
+    profileSectionUrl,
+} from '@/Pages/User/Profile/profileSections';
 import { useAuthUser } from '@/auth/useAuthUser';
 import { redirectToLogin } from '@/utils/requireAuth';
 import { Link, router } from '@inertiajs/react';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
-const sidebarLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
+const mainSidebarLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
     { label: 'Overview', href: route('dashboard'), routeMatch: 'dashboard' },
     { label: 'My orders', href: route('user.orders.index'), routeMatch: ['user.orders.index', 'user.orders.show'] },
-    { label: 'Profile', href: route('profile.edit'), routeMatch: 'profile.edit' },
 ];
 
 function isActive(routeMatch: string | string[]): boolean {
@@ -45,6 +49,14 @@ export default function UserPanelLayout({
 }: PropsWithChildren<{ title?: string }>) {
     const { user, loading, logout } = useAuthUser();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [, setHashTick] = useState(0);
+
+    useEffect(() => {
+        const onHashChange = (): void => setHashTick((n) => n + 1);
+        window.addEventListener('hashchange', onHashChange);
+
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -83,8 +95,20 @@ export default function UserPanelLayout({
                 <p className="truncate text-xs text-stone-500">{user.email}</p>
             </div>
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-                {sidebarLinks.map((item) => (
+                {mainSidebarLinks.map((item) => (
                     <Link key={item.href} href={item.href} className={navClass(isActive(item.routeMatch))}>
+                        {item.label}
+                    </Link>
+                ))}
+                <p className="mt-4 px-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-stone-400 dark:text-stone-500">
+                    Account
+                </p>
+                {PROFILE_SECTIONS.map((item) => (
+                    <Link
+                        key={item.id}
+                        href={profileSectionUrl(item.id)}
+                        className={navClass(isProfileSectionActive(item.id))}
+                    >
                         {item.label}
                     </Link>
                 ))}
@@ -200,13 +224,27 @@ export default function UserPanelLayout({
                         </div>
                     </div>
                     <nav className={storeUserMobileTabs} aria-label="Account sections">
-                        {sidebarLinks.map((item) => (
+                        {mainSidebarLinks.map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setMenuOpen(false)}
                                 className={
                                     isActive(item.routeMatch)
+                                        ? storeUserMobileTabActive
+                                        : storeUserMobileTabInactive
+                                }
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                        {PROFILE_SECTIONS.map((item) => (
+                            <Link
+                                key={item.id}
+                                href={profileSectionUrl(item.id)}
+                                onClick={() => setMenuOpen(false)}
+                                className={
+                                    isProfileSectionActive(item.id)
                                         ? storeUserMobileTabActive
                                         : storeUserMobileTabInactive
                                 }

@@ -12,6 +12,9 @@ export default defineConfig({
             '@': path.resolve(__dirname, 'resources/js'),
         },
     },
+    optimizeDeps: {
+        include: ['@headlessui/react', '@inertiajs/react', 'react', 'react-dom'],
+    },
     plugins: [
         laravel({
             input: 'resources/js/app.tsx',
