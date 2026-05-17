@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Gender;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Support\StoreCatalog;
 use Exception;
 use Illuminate\Http\Request;
@@ -102,6 +103,59 @@ class CatalogController extends Controller
         }
     }
 
+    public function postColorsList(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
+                'gender_id' => ['nullable', 'integer', 'exists:genders,id'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $productQuery = Product::query()->where('status', 'published');
+            $this->applyCatalogScopeFilters($productQuery, $request);
+
+            $variants = ProductVariant::query()
+                ->whereHas('product', fn ($q) => $q->whereIn('id', (clone $productQuery)->select('id')))
+                ->where(function ($q) {
+                    $q->where(function ($inner) {
+                        $inner->whereNotNull('color')->where('color', '!=', '');
+                    })->orWhereNotNull('color_hex');
+                })
+                ->get(['color', 'color_hex']);
+
+            $seen = [];
+            $colors = [];
+
+            foreach ($variants as $variant) {
+                $hex = $this->normalizeVariantColorHex($variant->color_hex);
+                $name = trim((string) ($variant->color ?? ''));
+                $value = $hex ?? ($name !== '' ? $name : null);
+
+                if ($value === null || isset($seen[$value])) {
+                    continue;
+                }
+
+                $seen[$value] = true;
+                $colors[] = [
+                    'value' => $value,
+                    'label' => $name !== '' ? $name : strtoupper(ltrim($value, '#')),
+                    'hex' => $hex,
+                ];
+            }
+
+            usort($colors, fn ($a, $b) => strcasecmp($a['label'], $b['label']));
+
+            return $this->sendJsonResponse(true, 'Colors fetched successfully.', $colors, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
     public function postProductsList(Request $request)
     {
         try {
@@ -110,6 +164,7 @@ class CatalogController extends Controller
                 'current_page' => ['nullable', 'integer', 'min:1'],
                 'keyword' => ['nullable', 'string'],
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+                'color' => ['nullable', 'string', 'max:50'],
                 'category_id' => ['nullable', 'integer', 'exists:categories,id'],
                 'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
                 'gender_id' => ['nullable', 'integer', 'exists:genders,id'],
@@ -150,22 +205,18 @@ class CatalogController extends Controller
                 $query->where('brand_id', $request->input('brand_id'));
             }
 
-            if (StoreCatalog::womenOnly()) {
-                $womenId = StoreCatalog::womenGenderId();
-                if ($womenId) {
-                    $query->where('gender_id', $request->input('gender_id', $womenId));
-                }
-            } elseif ($request->filled('gender_id')) {
-                $query->where('gender_id', $request->input('gender_id'));
-            }
+            $this->applyCatalogScopeFilters($query, $request);
 
-            if ($request->filled('subcategory_id')) {
-                $query->where('subcategory_id', $request->input('subcategory_id'));
-            }
-
-            if ($request->filled('category_id')) {
-                $categoryId = $request->input('category_id');
-                $query->whereHas('subcategory', fn ($q) => $q->where('category_id', $categoryId));
+            if ($request->filled('color')) {
+                $filterColor = trim((string) $request->input('color'));
+                $query->whereHas('variants', function ($q) use ($filterColor) {
+                    if (str_starts_with($filterColor, '#')) {
+                        $hex = $this->normalizeVariantColorHex($filterColor);
+                        $q->where('color_hex', $hex ?? $filterColor);
+                    } else {
+                        $q->whereRaw('LOWER(TRIM(color)) = ?', [strtolower($filterColor)]);
+                    }
+                });
             }
 
             if ($request->boolean('featured_only')) {
@@ -237,5 +288,50 @@ class CatalogController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    private function applyCatalogScopeFilters($query, Request $request): void
+    {
+        if (StoreCatalog::womenOnly()) {
+            $womenId = StoreCatalog::womenGenderId();
+            if ($womenId) {
+                $query->where('gender_id', $request->input('gender_id', $womenId));
+            }
+        } elseif ($request->filled('gender_id')) {
+            $query->where('gender_id', $request->input('gender_id'));
+        }
+
+        if ($request->filled('subcategory_id')) {
+            $query->where('subcategory_id', $request->input('subcategory_id'));
+        }
+
+        if ($request->filled('category_id')) {
+            $categoryId = $request->input('category_id');
+            $query->whereHas('subcategory', fn ($q) => $q->where('category_id', $categoryId));
+        }
+    }
+
+    private function normalizeVariantColorHex(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $v = trim((string) $value);
+        if ($v === '') {
+            return null;
+        }
+
+        if (preg_match('/^#([0-9A-Fa-f]{6})$/', $v)) {
+            return strtolower($v);
+        }
+
+        if (preg_match('/^#([0-9A-Fa-f]{3})$/', $v, $m)) {
+            $s = $m[1];
+
+            return strtolower('#'.$s[0].$s[0].$s[1].$s[1].$s[2].$s[2]);
+        }
+
+        return null;
     }
 }

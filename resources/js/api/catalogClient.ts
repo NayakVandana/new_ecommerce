@@ -1,6 +1,7 @@
 import type {
     CatalogBrand,
     CatalogCategory,
+    CatalogColorOption,
     CatalogEnvelope,
     CatalogGender,
     CatalogPaginator,
@@ -13,11 +14,18 @@ export type ProductListFilters = {
     current_page?: number;
     keyword?: string;
     brand_id?: number;
+    color?: string;
     category_id?: number;
     subcategory_id?: number;
     gender_id?: number;
     featured_only?: boolean;
     status?: string;
+};
+
+export type ColorsListScope = {
+    category_id?: number;
+    subcategory_id?: number;
+    gender_id?: number;
 };
 
 function catalogRequestCache<T>() {
@@ -116,4 +124,52 @@ export async function catalogCategoriesList(): Promise<
 
         return res.data;
     });
+}
+
+const colorsCacheByScope = new Map<
+    string,
+    { data: CatalogEnvelope<CatalogColorOption[]> | null; inflight: Promise<CatalogEnvelope<CatalogColorOption[]>> | null }
+>();
+
+function colorsScopeKey(scope: ColorsListScope): string {
+    return JSON.stringify(scope);
+}
+
+export async function catalogColorsList(
+    scope: ColorsListScope = {},
+): Promise<CatalogEnvelope<CatalogColorOption[]>> {
+    const key = colorsScopeKey(scope);
+    let entry = colorsCacheByScope.get(key);
+
+    if (!entry) {
+        entry = { data: null, inflight: null };
+        colorsCacheByScope.set(key, entry);
+    }
+
+    if (entry.data) {
+        return entry.data;
+    }
+
+    if (entry.inflight) {
+        return entry.inflight;
+    }
+
+    entry.inflight = axios
+        .post<CatalogEnvelope<CatalogColorOption[]>>(
+            '/api/v1/catalog/colors/colors-list',
+            scope,
+        )
+        .then((res) => {
+            entry!.data = res.data;
+            entry!.inflight = null;
+
+            return res.data;
+        })
+        .catch((error) => {
+            entry!.inflight = null;
+
+            throw error;
+        });
+
+    return entry.inflight;
 }

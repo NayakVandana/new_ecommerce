@@ -1,6 +1,7 @@
 import { catalogCategoriesList, catalogGendersList } from '@/api/catalogClient';
 import type { CatalogCategory, CatalogGender } from '@/store/catalogTypes';
 import { SHOP_CATEGORY_SLUGS } from '@/store/fashionBrand';
+import { womenStoreCache } from '@/store/womenStoreCache';
 import {
     createContext,
     useContext,
@@ -20,11 +21,19 @@ type WomenStoreValue = {
 const WomenStoreContext = createContext<WomenStoreValue | null>(null);
 
 export function WomenStoreProvider({ children }: PropsWithChildren) {
-    const [womenGenderId, setWomenGenderId] = useState<number | null>(null);
-    const [shopCategories, setShopCategories] = useState<CatalogCategory[]>([]);
-    const [ready, setReady] = useState(false);
+    const [womenGenderId, setWomenGenderId] = useState<number | null>(
+        womenStoreCache.womenGenderId,
+    );
+    const [shopCategories, setShopCategories] = useState<CatalogCategory[]>(
+        womenStoreCache.shopCategories,
+    );
+    const [ready, setReady] = useState(womenStoreCache.ready);
 
     useEffect(() => {
+        if (womenStoreCache.ready) {
+            return;
+        }
+
         let cancelled = false;
 
         void Promise.all([catalogGendersList(), catalogCategoriesList()]).then(
@@ -33,10 +42,14 @@ export function WomenStoreProvider({ children }: PropsWithChildren) {
                     return;
                 }
 
+                let nextWomenId = womenStoreCache.womenGenderId;
+                let nextCategories = womenStoreCache.shopCategories;
+
                 if (gendersRes.success && gendersRes.data?.length) {
                     const women =
                         gendersRes.data.find((g: CatalogGender) => g.slug === 'women') ??
                         gendersRes.data[0];
+                    nextWomenId = women.id;
                     setWomenGenderId(women.id);
                 }
 
@@ -44,9 +57,13 @@ export function WomenStoreProvider({ children }: PropsWithChildren) {
                     const ordered = SHOP_CATEGORY_SLUGS.map((slug) =>
                         categoriesRes.data.find((c) => c.slug === slug),
                     ).filter((c): c is CatalogCategory => c != null);
+                    nextCategories = ordered;
                     setShopCategories(ordered);
                 }
 
+                womenStoreCache.ready = true;
+                womenStoreCache.womenGenderId = nextWomenId;
+                womenStoreCache.shopCategories = nextCategories;
                 setReady(true);
             },
         );

@@ -1,3 +1,9 @@
+export type CatalogColorOption = {
+    value: string;
+    label: string;
+    hex?: string | null;
+};
+
 export type CatalogVariant = {
     id: number;
     sku: string;

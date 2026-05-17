@@ -38,6 +38,21 @@ function categoryChipClass(active: boolean) {
     return `${active ? storeChipActive : storeChip} shrink-0 whitespace-nowrap`;
 }
 
+/** Avoid remounting the catalog page when switching header categories. */
+const catalogCategoryLinkProps = {
+    preserveState: true,
+    preserveScroll: true,
+    only: [] as string[],
+};
+
+function isGuestCatalogRoute(): boolean {
+    try {
+        return route().current('guest.catalog') === true;
+    } catch {
+        return false;
+    }
+}
+
 export default function GuestPanelLayout({
     children,
     title,
@@ -56,6 +71,8 @@ function GuestPanelLayoutContent({
     const { user } = useAuthUser();
     const [menuOpen, setMenuOpen] = useState(false);
     const { shopCategories } = useWomenStore();
+    const onCatalog = isGuestCatalogRoute();
+    const catalogLinkExtra = onCatalog ? catalogCategoryLinkProps : {};
 
     useEffect(() => {
         if (menuOpen) {
@@ -128,6 +145,7 @@ function GuestPanelLayoutContent({
                                         key={cat.id}
                                         href={catalogUrlForCategory(cat.id)}
                                         className={categoryChipClass(false)}
+                                        {...catalogLinkExtra}
                                     >
                                         {cat.name}
                                     </Link>
@@ -135,6 +153,7 @@ function GuestPanelLayoutContent({
                                 <Link
                                     href={catalogUrl({ featured_only: true })}
                                     className={categoryChipClass(false)}
+                                    {...catalogLinkExtra}
                                 >
                                     New in
                                 </Link>
@@ -154,11 +173,16 @@ function GuestPanelLayoutContent({
                                 key={cat.id}
                                 href={catalogUrlForCategory(cat.id)}
                                 className={navClass(false)}
+                                {...catalogLinkExtra}
                             >
                                 {cat.name}
                             </Link>
                         ))}
-                        <Link href={catalogUrl({ featured_only: true })} className={navClass(false)}>
+                        <Link
+                            href={catalogUrl({ featured_only: true })}
+                            className={navClass(false)}
+                            {...catalogLinkExtra}
+                        >
                             New in
                         </Link>
                     </nav>
@@ -178,6 +202,7 @@ function GuestPanelLayoutContent({
                                     href={catalogUrlForCategory(cat.id)}
                                     onClick={() => setMenuOpen(false)}
                                     className={`${storeMobileNavLink} ${storeNavInactive}`}
+                                    {...catalogLinkExtra}
                                 >
                                     {cat.name}
                                 </Link>
@@ -186,6 +211,7 @@ function GuestPanelLayoutContent({
                                 href={catalogUrl({ featured_only: true })}
                                 onClick={() => setMenuOpen(false)}
                                 className={`${storeMobileNavLink} ${storeNavInactive}`}
+                                {...catalogLinkExtra}
                             >
                                 New in
                             </Link>
