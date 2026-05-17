@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BrandApiController;
 use App\Http\Controllers\Admin\CategoryApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
 use App\Http\Controllers\Admin\OrderApiController;
+use App\Http\Controllers\Admin\OrderInvoiceController;
 use App\Http\Controllers\Admin\ProductApiController;
 use App\Http\Controllers\Admin\RecentlyViewedApiController;
 use App\Http\Controllers\Admin\WishlistApiController;
@@ -56,5 +57,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/orders/orders-meta', [OrderApiController::class, 'postOrdersMeta']);
     Route::post('/orders/orders-list', [OrderApiController::class, 'postOrdersList']);
     Route::post('/orders/order-show', [OrderApiController::class, 'postOrderShow']);
+    Route::post('/orders/order-invoice-download', [OrderInvoiceController::class, 'download']);
     Route::post('/orders/update-status', [OrderApiController::class, 'postOrderUpdateStatus']);
 });

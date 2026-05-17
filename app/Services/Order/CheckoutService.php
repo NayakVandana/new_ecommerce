@@ -98,10 +98,8 @@ class CheckoutService
                     'grand_total' => $grandTotal,
                     'currency' => $cart->currency ?? 'INR',
                     'customer_note' => $input['customer_note'] ?? null,
-                    'billing_address_id' => $address?->id,
-                    'shipping_address_id' => $address?->id,
-                    'billing_snapshot' => $snapshot,
-                    'shipping_snapshot' => $snapshot,
+                    'address_of_bill_to' => $snapshot,
+                    'address_of_ship_to' => $snapshot,
                     'placed_at' => now(),
                 ]);
 

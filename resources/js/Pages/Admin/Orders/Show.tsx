@@ -1,4 +1,5 @@
 import {
+    adminCancelBtn,
     adminErrorBanner,
     adminFormSection,
     adminFormSectionTitle,
@@ -13,6 +14,7 @@ import {
     adminTableWrap,
 } from '@/admin/adminTheme';
 import {
+    adminApiDownloadOrderInvoice,
     adminApiPost,
     type AdminApiEnvelope,
 } from '@/api/adminClient';
@@ -82,7 +84,8 @@ type OrderDetail = {
     customer_note: string | null;
     placed_at: string | null;
     created_at: string;
-    shipping_snapshot?: AddressSnapshot | null;
+    address_of_bill_to?: AddressSnapshot | null;
+    address_of_ship_to?: AddressSnapshot | null;
     user?: OrderUser | null;
     items?: OrderItem[];
     status_histories?: StatusHistory[];
@@ -121,6 +124,8 @@ export default function Show() {
     const [statusNote, setStatusNote] = useState('');
     const [updating, setUpdating] = useState(false);
     const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+    const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+    const [invoiceError, setInvoiceError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -197,10 +202,32 @@ export default function Show() {
         }
     };
 
+    const onDownloadInvoice = async () => {
+        if (!order || downloadingInvoice) {
+            return;
+        }
+
+        setDownloadingInvoice(true);
+        setInvoiceError(null);
+
+        try {
+            await adminApiDownloadOrderInvoice(order.id, order.order_number);
+        } catch (err) {
+            setInvoiceError(
+                err instanceof Error
+                    ? err.message
+                    : 'Could not download invoice.',
+            );
+        } finally {
+            setDownloadingInvoice(false);
+        }
+    };
+
     const items = order?.items ?? [];
     const histories = order?.status_histories ?? [];
     const payments = order?.payments ?? [];
-    const addressText = formatAddress(order?.shipping_snapshot);
+    const billToText = formatAddress(order?.address_of_bill_to);
+    const shipToText = formatAddress(order?.address_of_ship_to);
 
     return (
         <>
@@ -255,14 +282,34 @@ export default function Show() {
                                                 )}
                                             </p>
                                         </div>
-                                        <span
-                                            className={orderStatusBadgeClass(
-                                                order.status,
-                                            )}
-                                        >
-                                            {order.status}
-                                        </span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void onDownloadInvoice();
+                                                }}
+                                                disabled={downloadingInvoice}
+                                                className={adminCancelBtn}
+                                            >
+                                                {downloadingInvoice
+                                                    ? 'Preparing…'
+                                                    : 'Download invoice'}
+                                            </button>
+                                            <span
+                                                className={orderStatusBadgeClass(
+                                                    order.status,
+                                                )}
+                                            >
+                                                {order.status}
+                                            </span>
+                                        </div>
                                     </div>
+
+                                    {invoiceError ? (
+                                        <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+                                            {invoiceError}
+                                        </p>
+                                    ) : null}
 
                                     {order.user ? (
                                         <dl className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-sm dark:border-slate-800 sm:grid-cols-2">
@@ -361,14 +408,37 @@ export default function Show() {
                                     ) : null}
                                 </section>
 
-                                {addressText ? (
+                                {billToText || shipToText ? (
                                     <section className={adminFormSection}>
                                         <h2 className={adminFormSectionTitle}>
-                                            Delivery address
+                                            Addresses
                                         </h2>
-                                        <pre className="mt-3 whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300">
-                                            {addressText}
-                                        </pre>
+                                        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                                            {billToText ? (
+                                                <div>
+                                                    <p
+                                                        className={`${adminMutedText} text-xs uppercase tracking-wide`}
+                                                    >
+                                                        Bill to
+                                                    </p>
+                                                    <pre className="mt-1 whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300">
+                                                        {billToText}
+                                                    </pre>
+                                                </div>
+                                            ) : null}
+                                            {shipToText ? (
+                                                <div>
+                                                    <p
+                                                        className={`${adminMutedText} text-xs uppercase tracking-wide`}
+                                                    >
+                                                        Ship to
+                                                    </p>
+                                                    <pre className="mt-1 whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300">
+                                                        {shipToText}
+                                                    </pre>
+                                                </div>
+                                            ) : null}
+                                        </div>
                                     </section>
                                 ) : null}
 

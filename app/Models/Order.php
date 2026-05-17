@@ -24,10 +24,8 @@ class Order extends Model
         'grand_total',
         'currency',
         'customer_note',
-        'billing_address_id',
-        'shipping_address_id',
-        'billing_snapshot',
-        'shipping_snapshot',
+        'address_of_bill_to',
+        'address_of_ship_to',
         'placed_at',
     ];
 
@@ -39,8 +37,8 @@ class Order extends Model
             'shipping_total' => 'decimal:2',
             'discount_total' => 'decimal:2',
             'grand_total' => 'decimal:2',
-            'billing_snapshot' => 'array',
-            'shipping_snapshot' => 'array',
+            'address_of_bill_to' => 'array',
+            'address_of_ship_to' => 'array',
             'placed_at' => 'datetime',
         ];
     }
@@ -53,16 +51,6 @@ class Order extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
-    }
-
-    public function billingAddress(): BelongsTo
-    {
-        return $this->belongsTo(UserAddress::class, 'billing_address_id');
-    }
-
-    public function shippingAddress(): BelongsTo
-    {
-        return $this->belongsTo(UserAddress::class, 'shipping_address_id');
     }
 
     public function items(): HasMany

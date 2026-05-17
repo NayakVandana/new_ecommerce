@@ -21,10 +21,8 @@ return new class extends Migration
             $table->decimal('grand_total', 12, 2);
             $table->string('currency', 3)->default('INR');
             $table->text('customer_note')->nullable();
-            $table->foreignId('billing_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
-            $table->foreignId('shipping_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
-            $table->json('billing_snapshot')->nullable();
-            $table->json('shipping_snapshot')->nullable();
+            $table->json('address_of_bill_to')->nullable();
+            $table->json('address_of_ship_to')->nullable();
             $table->timestamp('placed_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
