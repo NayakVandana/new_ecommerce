@@ -78,18 +78,48 @@ export default function VariantPicker({
                                         ) : null}
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="flex flex-wrap items-center gap-2">
-                                            <span className="font-medium text-stone-900 dark:text-stone-50">
-                                                {variantLabel(v)}
-                                            </span>
-                                            {v.color_hex ? (
-                                                <span
-                                                    className="inline-block h-4 w-4 rounded-full border border-stone-300 dark:border-stone-600"
-                                                    style={{
-                                                        backgroundColor: v.color_hex,
-                                                    }}
-                                                    title={v.color ?? v.color_hex}
-                                                />
+                                        <span className="flex flex-wrap items-start gap-x-4 gap-y-2">
+                                            {v.size ? (
+                                                <span className="inline-flex flex-col">
+                                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                                                        Size
+                                                    </span>
+                                                    <span className="mt-0.5 text-sm font-semibold text-stone-900 dark:text-stone-50">
+                                                        {v.size}
+                                                    </span>
+                                                </span>
+                                            ) : null}
+                                            {v.color || v.color_hex ? (
+                                                <span className="inline-flex flex-col">
+                                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                                                        Color
+                                                    </span>
+                                                    <span className="mt-0.5 flex items-center gap-1.5">
+                                                        {v.color_hex ? (
+                                                            <span
+                                                                className="inline-block h-4 w-4 shrink-0 rounded-full border border-stone-300 dark:border-stone-600"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        v.color_hex,
+                                                                }}
+                                                                aria-hidden
+                                                            />
+                                                        ) : null}
+                                                        <span className="text-sm font-semibold text-stone-900 dark:text-stone-50">
+                                                            {v.color ?? '—'}
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            ) : null}
+                                            {!v.size && !v.color && !v.color_hex ? (
+                                                <span className="inline-flex flex-col">
+                                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                                                        Variant
+                                                    </span>
+                                                    <span className="mt-0.5 text-sm font-semibold text-stone-900 dark:text-stone-50">
+                                                        {variantLabel(v)}
+                                                    </span>
+                                                </span>
                                             ) : null}
                                         </span>
                                         <span className="mt-0.5 block text-sm font-semibold text-stone-800 dark:text-stone-200">

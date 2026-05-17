@@ -220,14 +220,14 @@ export default function ProductImageSlider({
                             e.stopPropagation();
                             openFullscreen();
                         }}
-                        className="absolute right-3 top-3 z-[2] flex h-9 items-center gap-1.5 rounded-full bg-black/50 px-3 text-xs font-medium text-white opacity-0 backdrop-blur-sm transition hover:bg-black/70 group-hover:opacity-100 focus-visible:opacity-100"
-                        aria-label="Fullscreen"
+                        className="absolute left-3 top-3 z-[2] flex min-h-9 items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-sm transition hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                        aria-label="Open full screen gallery"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"
-                            className="h-4 w-4"
+                            className="h-4 w-4 shrink-0"
                             aria-hidden
                         >
                             <path d="M3 3a1 1 0 0 0-1 1v2.586a1 1 0 0 0 .293.707l3.414 3.414a1 1 0 0 0 1.414-1.414L4.414 6H6a1 1 0 1 0 0-2H3zm11.293 7.707a1 1 0 0 0-1.414 1.414L15.586 14H14a1 1 0 1 0 0 2h3a1 1 0 0 0 1-1v-3a1 1 0 0 0-2 0v1.586l-3.293-3.293zM6 14H4.414l3.293 3.293a1 1 0 0 0 1.414-1.414L6 15.414V17a1 1 0 1 0-2 0v-3a1 1 0 0 0 1-1zm9-11h1.586l-3.293-3.293a1 1 0 0 0-1.414 1.414L14 4.414V3a1 1 0 0 0 2 0v3a1 1 0 0 0-1 1h-3a1 1 0 0 0 0-2z" />
@@ -289,6 +289,14 @@ export default function ProductImageSlider({
                         ))}
                     </div>
                 ) : null}
+
+                <p className="text-center text-xs text-stone-500 dark:text-stone-400 sm:text-left">
+                    Tap the image or use{' '}
+                    <span className="font-medium text-stone-700 dark:text-stone-300">
+                        Full screen
+                    </span>{' '}
+                    to view photos larger.
+                </p>
             </div>
 
             {fullscreenOverlay}

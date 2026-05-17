@@ -141,15 +141,29 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
                             resetKey={activeVariant?.id ?? 0}
                         />
                         {activeVariant && gallery.length > 0 ? (
-                            <p className={`mt-2 ${storeMutedText} text-center text-xs sm:text-left`}>
+                            <p
+                                className={`mt-2 ${storeMutedText} text-center text-xs sm:text-left`}
+                            >
                                 Showing {gallery.length} photo
-                                {gallery.length === 1 ? '' : 's'} for{' '}
-                                <span className="font-medium text-stone-700 dark:text-stone-300">
-                                    {activeVariant.size ?? activeVariant.sku}
-                                    {activeVariant.color
-                                        ? ` · ${activeVariant.color}`
-                                        : ''}
-                                </span>
+                                {gallery.length === 1 ? '' : 's'}
+                                {activeVariant.size ? (
+                                    <>
+                                        {' '}
+                                        ·{' '}
+                                        <span className="font-medium text-stone-700 dark:text-stone-300">
+                                            Size {activeVariant.size}
+                                        </span>
+                                    </>
+                                ) : null}
+                                {activeVariant.color ? (
+                                    <>
+                                        {' '}
+                                        ·{' '}
+                                        <span className="font-medium text-stone-700 dark:text-stone-300">
+                                            Color {activeVariant.color}
+                                        </span>
+                                    </>
+                                ) : null}
                             </p>
                         ) : null}
                     </div>
