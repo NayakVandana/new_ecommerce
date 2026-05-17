@@ -38,6 +38,7 @@ type ProductRow = {
     name: string;
     slug: string;
     status: string;
+    total_stock?: number;
     thumb_url?: string | null;
     brand?: { name: string } | null;
     subcategory?: {
@@ -46,6 +47,28 @@ type ProductRow = {
     } | null;
     variants?: unknown[];
 };
+
+function formatStock(total: number | undefined): string {
+    if (total == null) {
+        return '—';
+    }
+
+    return total.toLocaleString();
+}
+
+function stockClass(total: number | undefined): string {
+    if (total == null) {
+        return adminTableTdMuted;
+    }
+    if (total <= 0) {
+        return 'font-semibold text-red-600 dark:text-red-400';
+    }
+    if (total <= 5) {
+        return 'font-semibold text-amber-700 dark:text-amber-400';
+    }
+
+    return adminTableTdStrong;
+}
 
 function statusBadgeClass(status: string): string {
     switch (status.toLowerCase()) {
@@ -185,6 +208,7 @@ export default function Index() {
                                         Category
                                     </th>
                                     <th className={adminTableTh}>Status</th>
+                                    <th className={adminTableTh}>Stock</th>
                                     <th
                                         className={`${adminTableTh} ${adminTableCellHiddenLg}`}
                                     >
@@ -199,7 +223,7 @@ export default function Index() {
                                 {loading && (
                                     <tr>
                                         <td
-                                            colSpan={6}
+                                            colSpan={7}
                                             className={`px-5 py-10 text-center ${adminMutedText}`}
                                         >
                                             Loading…
@@ -238,6 +262,10 @@ export default function Index() {
                                                                 ?.name ??
                                                                 'No category'}
                                                             {' · '}
+                                                            {formatStock(
+                                                                row.total_stock,
+                                                            )}{' '}
+                                                            in stock ·{' '}
                                                             {Array.isArray(
                                                                 row.variants,
                                                             )
@@ -273,6 +301,11 @@ export default function Index() {
                                                 >
                                                     {row.status}
                                                 </span>
+                                            </td>
+                                            <td
+                                                className={`${adminTableTd} ${stockClass(row.total_stock)}`}
+                                            >
+                                                {formatStock(row.total_stock)}
                                             </td>
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenLg}`}
@@ -314,7 +347,7 @@ export default function Index() {
                                     paginator.data.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={6}
+                                                colSpan={7}
                                                 className={`px-5 py-10 text-center ${adminMutedText}`}
                                             >
                                                 No products found.

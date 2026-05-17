@@ -95,6 +95,10 @@ class ProductApiController extends Controller
                     $thumbUrl = $this->resolveImagePublicUrl($img->path, $img->disk);
                 }
                 $product->setAttribute('thumb_url', $thumbUrl);
+                $product->setAttribute(
+                    'total_stock',
+                    (int) $product->variants->sum('stock_quantity'),
+                );
                 $product->unsetRelation('images');
                 $product->variants->each(fn ($v) => $v->unsetRelation('images'));
 
