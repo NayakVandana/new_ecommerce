@@ -4,6 +4,7 @@ use App\Http\Controllers\User\AuthController;
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\User\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->prefix('v1/user')->group(function () {
@@ -22,4 +23,9 @@ Route::middleware(['auth:sanctum'])->prefix('v1/user')->group(function () {
     Route::post('/cart/cart-update', [CartController::class, 'postCartUpdate']);
     Route::post('/cart/cart-remove', [CartController::class, 'postCartRemove']);
     Route::post('/cart/cart-clear', [CartController::class, 'postCartClear']);
+
+    Route::post('/wishlist/wishlist-list', [WishlistController::class, 'postWishlistList']);
+    Route::post('/wishlist/wishlist-add', [WishlistController::class, 'postWishlistAdd']);
+    Route::post('/wishlist/wishlist-remove', [WishlistController::class, 'postWishlistRemove']);
+    Route::post('/wishlist/wishlist-toggle', [WishlistController::class, 'postWishlistToggle']);
 });

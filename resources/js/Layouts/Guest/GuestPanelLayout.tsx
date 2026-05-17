@@ -1,4 +1,5 @@
 import CartBadge from '@/Components/CartBadge';
+import WishlistBadge from '@/Components/WishlistBadge';
 import AccountHeaderButton from '@/Components/store/AccountHeaderButton';
 import FashionAnnouncementBar from '@/Components/store/FashionAnnouncementBar';
 import HeaderCatalogSearch from '@/Components/store/HeaderCatalogSearch';
@@ -7,6 +8,7 @@ import StoreFixedHeader from '@/Components/store/StoreFixedHeader';
 import StoreFooter from '@/Components/store/StoreFooter';
 import AppearanceSync from '@/Components/AppearanceSync';
 import { useWomenStore, WomenStoreProvider } from '@/hooks/useWomenStore';
+import { WishlistProvider } from '@/hooks/useWishlist';
 import { catalogUrl, catalogUrlForCategory } from '@/store/fashionBrand';
 import {
     storeBtnCompact,
@@ -60,7 +62,9 @@ export default function GuestPanelLayout({
 }: PropsWithChildren<{ title?: string }>) {
     return (
         <WomenStoreProvider>
-            <GuestPanelLayoutContent title={title}>{children}</GuestPanelLayoutContent>
+            <WishlistProvider>
+                <GuestPanelLayoutContent title={title}>{children}</GuestPanelLayoutContent>
+            </WishlistProvider>
         </WomenStoreProvider>
     );
 }
@@ -100,6 +104,7 @@ function GuestPanelLayoutContent({
                         <HeaderCatalogSearch className="col-span-2 w-full lg:col-span-1 lg:max-w-xl lg:justify-self-center" />
 
                         <div className={`${storeHeaderActions} justify-self-end`}>
+                            <WishlistBadge />
                             <CartBadge />
                             {user ? (
                                 <AccountHeaderButton name={user.name} />

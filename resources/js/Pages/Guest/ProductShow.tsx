@@ -18,6 +18,7 @@ import {
     storeLabel,
     storeMutedText,
 } from '@/store/storeTheme';
+import WishlistToggleButton from '@/Components/store/WishlistToggleButton';
 import GuestPanelLayout from '@/Layouts/Guest/GuestPanelLayout';
 import { redirectToLogin } from '@/utils/requireAuth';
 import { useAuthUser } from '@/auth/useAuthUser';
@@ -113,7 +114,13 @@ export default function ProductShow({ productSlug }: { productSlug: string }) {
             {!loading && product ? (
                 <div className="grid gap-6 sm:gap-10 lg:grid-cols-2">
                     <div className="space-y-3">
-                        <div className="aspect-[3/4] overflow-hidden bg-stone-200 sm:aspect-square dark:bg-stone-800">
+                        <div className="relative aspect-[3/4] overflow-hidden bg-stone-200 sm:aspect-square dark:bg-stone-800">
+                            {activeVariant ? (
+                                <WishlistToggleButton
+                                    productVariantId={activeVariant.id}
+                                    overlay
+                                />
+                            ) : null}
                             {heroImage ? (
                                 <img
                                     src={heroImage}

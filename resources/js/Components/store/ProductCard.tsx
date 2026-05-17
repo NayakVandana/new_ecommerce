@@ -6,6 +6,7 @@ import {
     productPrimaryImage,
     variantLabel,
 } from '@/store/productUtils';
+import WishlistToggleButton from '@/Components/store/WishlistToggleButton';
 import {
     storeBtnPrimary,
     storeBtnSecondary,
@@ -63,8 +64,14 @@ export default function ProductCard({ product, compact = false }: Props) {
         <article className={storeProductCard}>
             <Link
                 href={route('guest.product.show', product.slug)}
-                className={storeProductImageWrap}
+                className={`${storeProductImageWrap} relative`}
             >
+                {activeVariant ? (
+                    <WishlistToggleButton
+                        productVariantId={activeVariant.id}
+                        overlay
+                    />
+                ) : null}
                 {imageSrc ? (
                     <img
                         src={imageSrc}

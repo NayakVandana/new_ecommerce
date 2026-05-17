@@ -1,4 +1,5 @@
 import CartBadge from '@/Components/CartBadge';
+import WishlistBadge from '@/Components/WishlistBadge';
 import AccountHeaderButton from '@/Components/store/AccountHeaderButton';
 import FashionLogo from '@/Components/store/FashionLogo';
 import StoreFixedHeader from '@/Components/store/StoreFixedHeader';
@@ -27,6 +28,7 @@ import {
     PROFILE_SECTIONS,
     profileSectionUrl,
 } from '@/Pages/User/Profile/profileSections';
+import { WishlistProvider } from '@/hooks/useWishlist';
 import { useAuthUser } from '@/auth/useAuthUser';
 import { redirectToLogin } from '@/utils/requireAuth';
 import { Link, router } from '@inertiajs/react';
@@ -34,6 +36,7 @@ import { PropsWithChildren, useEffect, useState } from 'react';
 
 const mainSidebarLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
     { label: 'Overview', href: route('dashboard'), routeMatch: 'dashboard' },
+    { label: 'Wishlist', href: route('user.wishlist.index'), routeMatch: 'user.wishlist.index' },
     { label: 'My orders', href: route('user.orders.index'), routeMatch: ['user.orders.index', 'user.orders.show'] },
 ];
 
@@ -181,6 +184,7 @@ export default function UserPanelLayout({
     );
 
     return (
+        <WishlistProvider>
         <div className={`${storeUserShell} min-h-screen`}>
             <AppearanceSync />
 
@@ -192,6 +196,7 @@ export default function UserPanelLayout({
                             <Link href={route('guest.catalog')} className={storeBtnGhost}>
                                 Shop
                             </Link>
+                            <WishlistBadge />
                             <CartBadge />
                             <AccountHeaderButton name={user.name} />
                         </div>
@@ -219,6 +224,7 @@ export default function UserPanelLayout({
                             {title ?? 'Account'}
                         </span>
                         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                            <WishlistBadge />
                             <CartBadge />
                             <AccountHeaderButton name={user.name} />
                         </div>
@@ -266,5 +272,6 @@ export default function UserPanelLayout({
                 </div>
             </div>
         </div>
+        </WishlistProvider>
     );
 }

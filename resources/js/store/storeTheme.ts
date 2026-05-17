@@ -139,6 +139,18 @@ export const storeCartLine =
 export const storeCartLineBody =
     'flex min-w-0 flex-1 gap-3 sm:gap-4';
 
+export const storeWishlistLine =
+    'flex flex-col gap-4 border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-5';
+
+export const storeWishlistLineBody =
+    'flex min-w-0 flex-1 items-start gap-4';
+
+export const storeWishlistActions =
+    'grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:grid-cols-none';
+
+export const storeWishlistActionBtn =
+    'w-full whitespace-nowrap sm:min-w-[9.5rem]';
+
 export const storeCard =
     'border border-stone-200 bg-white p-5 sm:p-6 dark:border-stone-800 dark:bg-stone-900';
 
