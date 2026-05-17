@@ -1,5 +1,4 @@
 import {
-    storeCard,
     storeErrorBanner,
     storeInput,
     storeMutedText,
@@ -18,8 +17,8 @@ import {
     userApiPost,
 } from '@/api/userClient';
 import UserPanelLayout from '@/Layouts/User/UserPanelLayout';
-import { Head, Link } from '@inertiajs/react';
-import { useCallback, useEffect, useState } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type OrderRow = {
     id: number;
@@ -30,15 +29,34 @@ type OrderRow = {
     placed_at: string | null;
     created_at: string;
     items_count: number;
+    items_sum_quantity: number | null;
 };
 
 type Paginator = {
     data: OrderRow[];
     current_page: number;
     last_page: number;
+    total: number;
 };
 
+const STATUS_OPTIONS = [
+    { id: '', label: 'All statuses' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'processing', label: 'Processing' },
+    { id: 'confirmed', label: 'Confirmed' },
+    { id: 'shipped', label: 'Shipped' },
+    { id: 'delivered', label: 'Delivered' },
+    { id: 'cancelled', label: 'Cancelled' },
+] as const;
+
 export default function Index() {
+    const { url } = usePage();
+    const placedCount = useMemo(() => {
+        const n = new URL(url, window.location.origin).searchParams.get('placed');
+
+        return n ? Number.parseInt(n, 10) : 0;
+    }, [url]);
+
     const [page, setPage] = useState(1);
     const [paginator, setPaginator] = useState<Paginator | null>(null);
     const [loading, setLoading] = useState(true);
@@ -76,25 +94,33 @@ export default function Index() {
     }, [page, load]);
 
     return (
-        <UserPanelLayout title="Orders">
+        <UserPanelLayout title="My orders">
             <Head title="My orders" />
             <div className="mx-auto max-w-4xl space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className={storeMutedText}>
-                        View order history and track status.
-                    </p>
+                <p className={storeMutedText}>
+                    Each row is one order (checkout creates a separate order for
+                    each cart item). Open an order to see its product and billing.
+                </p>
+
+                {placedCount > 1 ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+                        {placedCount} orders were placed — one per item in your
+                        cart. Shipping and tax were split across them.
+                    </div>
+                ) : null}
+
+                <div className="flex justify-end">
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className={`${storeInput} sm:max-w-[12rem]`}
+                        className={`${storeInput} w-full sm:max-w-[12rem]`}
                         aria-label="Filter by status"
                     >
-                        <option value="">All statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
+                        {STATUS_OPTIONS.map((s) => (
+                            <option key={s.id || 'all'} value={s.id}>
+                                {s.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -106,15 +132,20 @@ export default function Index() {
                             <tr>
                                 <th className={storeTableTh}>Order</th>
                                 <th className={storeTableTh}>Status</th>
+                                <th className={`${storeTableTh} hidden sm:table-cell`}>
+                                    Qty
+                                </th>
                                 <th className={storeTableTh}>Total</th>
-                                <th className={storeTableTh}>Date</th>
+                                <th className={`${storeTableTh} hidden md:table-cell`}>
+                                    Placed
+                                </th>
                                 <th className={`${storeTableTh} text-right`}> </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className={`${storeTableTd} text-center`}>
+                                    <td colSpan={6} className={`${storeTableTd} text-center`}>
                                         <span className={storeMutedText}>Loading…</span>
                                     </td>
                                 </tr>
@@ -126,9 +157,8 @@ export default function Index() {
                                             <p className={storeTableTdStrong}>
                                                 {row.order_number}
                                             </p>
-                                            <p className="text-xs text-stone-500 dark:text-stone-400">
-                                                {row.items_count} item
-                                                {row.items_count === 1 ? '' : 's'}
+                                            <p className="text-xs text-stone-500 sm:hidden">
+                                                Qty {row.items_sum_quantity ?? 0}
                                             </p>
                                         </td>
                                         <td className={storeTableTd}>
@@ -136,11 +166,20 @@ export default function Index() {
                                                 {row.status}
                                             </span>
                                         </td>
+                                        <td
+                                            className={`${storeTableTd} hidden text-stone-600 sm:table-cell dark:text-stone-400`}
+                                        >
+                                            {row.items_sum_quantity ?? 0}
+                                        </td>
                                         <td className={storeTableTd}>
                                             {formatMoney(row.grand_total, row.currency)}
                                         </td>
-                                        <td className={storeTableTd}>
-                                            {formatOrderDate(row.placed_at ?? row.created_at)}
+                                        <td
+                                            className={`${storeTableTd} hidden text-stone-500 md:table-cell`}
+                                        >
+                                            {formatOrderDate(
+                                                row.placed_at ?? row.created_at,
+                                            )}
                                         </td>
                                         <td className={`${storeTableTd} text-right`}>
                                             <Link
@@ -156,7 +195,7 @@ export default function Index() {
                                 paginator &&
                                 paginator.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className={`${storeTableTd} text-center`}>
+                                        <td colSpan={6} className={`${storeTableTd} text-center`}>
                                             <p className={storeMutedText}>No orders yet.</p>
                                             <Link
                                                 href={route('guest.catalog')}
@@ -183,6 +222,9 @@ export default function Index() {
                         </button>
                         <span className={`text-center ${storeMutedText}`}>
                             Page {paginator.current_page} of {paginator.last_page}
+                            {paginator.total > 0
+                                ? ` · ${paginator.total} orders`
+                                : ''}
                         </span>
                         <button
                             type="button"

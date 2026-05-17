@@ -31,13 +31,18 @@ export type ShippingAddressInput = {
     country?: string;
 };
 
-export type CheckoutResult = {
+export type PlacedOrderSummary = {
     id: number;
     order_number: string;
     grand_total: number;
     currency: string;
     status: string;
+};
+
+export type CheckoutResult = PlacedOrderSummary & {
     payment_method: string;
+    orders_count: number;
+    orders: PlacedOrderSummary[];
 };
 
 async function orderPost<T>(path: string, data: Record<string, unknown> = {}): Promise<T> {

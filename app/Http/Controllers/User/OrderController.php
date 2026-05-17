@@ -5,12 +5,14 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\CheckoutPlaceRequest;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Services\Cart\CartOwnerService;
 use App\Services\Order\CheckoutService;
 use App\Support\StoreDelivery;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use RuntimeException;
 
 class OrderController extends Controller
@@ -46,20 +48,36 @@ class OrderController extends Controller
         try {
             $cart = $this->cartOwner->resolve($request);
 
-            $order = $this->checkout->placeOrder($request->user(), $cart, [
+            $result = $this->checkout->placeOrder($request->user(), $cart, [
                 'payment_method' => $request->validated('payment_method'),
                 'shipping_address' => $request->validatedShippingAddress(),
                 'customer_note' => $request->input('customer_note'),
                 'save_address' => $request->boolean('save_address'),
             ]);
 
-            return $this->sendJsonResponse(true, 'Order placed successfully.', [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'grand_total' => $order->grand_total,
-                'currency' => $order->currency,
-                'status' => $order->status,
+            $orders = $result['orders'];
+            $primary = $result['primary'];
+            $ordersCount = $orders->count();
+
+            $message = $ordersCount > 1
+                ? "{$ordersCount} orders placed successfully (one per item)."
+                : 'Order placed successfully.';
+
+            return $this->sendJsonResponse(true, $message, [
+                'id' => $primary->id,
+                'order_number' => $primary->order_number,
+                'grand_total' => $primary->grand_total,
+                'currency' => $primary->currency,
+                'status' => $primary->status,
                 'payment_method' => 'cod',
+                'orders_count' => $ordersCount,
+                'orders' => $orders->map(fn (Order $order) => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'grand_total' => $order->grand_total,
+                    'currency' => $order->currency,
+                    'status' => $order->status,
+                ])->values()->all(),
             ], 200);
         } catch (RuntimeException $e) {
             return $this->sendJsonResponse(false, $e->getMessage(), null, 200);
@@ -87,6 +105,7 @@ class OrderController extends Controller
             $query = Order::query()
                 ->where('user_id', $request->user()->id)
                 ->withCount('items')
+                ->withSum('items', 'quantity')
                 ->orderByDesc('placed_at')
                 ->orderByDesc('created_at');
 
@@ -105,6 +124,79 @@ class OrderController extends Controller
             ], 'page', $currentPage);
 
             return $this->sendJsonResponse(true, 'Orders fetched successfully.', $orders, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postOrderItemsList(Request $request)
+    {
+        try {
+            $statusKeys = array_keys(config('orders.statuses', []));
+
+            $validation = Validator::make($request->all(), [
+                'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+                'current_page' => ['nullable', 'integer', 'min:1'],
+                'keyword' => ['nullable', 'string', 'max:120'],
+                'status' => ['nullable', 'string', Rule::in($statusKeys)],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $perPage = $request->input('per_page') ? (int) $request->input('per_page') : 10;
+            $currentPage = $request->input('current_page') ? (int) $request->input('current_page') : 1;
+            $userId = $request->user()->id;
+
+            $query = OrderItem::query()
+                ->select('order_items.*')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.user_id', $userId)
+                ->with([
+                    'order:id,order_number,user_id,status,currency,placed_at,created_at',
+                ])
+                ->orderByDesc('orders.placed_at')
+                ->orderByDesc('orders.created_at')
+                ->orderByDesc('order_items.id');
+
+            if ($request->filled('status')) {
+                $query->where('orders.status', $request->input('status'));
+            }
+
+            if ($request->filled('keyword')) {
+                $keyword = $request->input('keyword');
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('orders.order_number', 'like', '%'.$keyword.'%')
+                        ->orWhere('order_items.product_name', 'like', '%'.$keyword.'%')
+                        ->orWhere('order_items.variant_label', 'like', '%'.$keyword.'%')
+                        ->orWhere('order_items.sku', 'like', '%'.$keyword.'%');
+                });
+            }
+
+            $paginator = $query->paginate($perPage, ['order_items.*'], 'page', $currentPage);
+
+            $paginator->getCollection()->transform(function (OrderItem $row) {
+                $order = $row->order;
+
+                return [
+                    'id' => $row->id,
+                    'order_id' => $order?->id,
+                    'order_number' => $order?->order_number,
+                    'status' => $order?->status,
+                    'currency' => $order?->currency ?? 'INR',
+                    'placed_at' => $order?->placed_at?->toIso8601String(),
+                    'created_at' => $order?->created_at?->toIso8601String(),
+                    'product_name' => $row->product_name,
+                    'variant_label' => $row->variant_label,
+                    'sku' => $row->sku,
+                    'quantity' => $row->quantity,
+                    'unit_price' => (float) $row->unit_price,
+                    'line_total' => (float) $row->line_total,
+                ];
+            });
+
+            return $this->sendJsonResponse(true, 'Order lines fetched successfully.', $paginator, 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }

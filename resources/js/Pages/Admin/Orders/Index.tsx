@@ -44,6 +44,7 @@ type OrderRow = {
     placed_at: string | null;
     created_at: string;
     items_count: number;
+    items_sum_quantity: number | null;
     user?: OrderUser | null;
 };
 
@@ -156,7 +157,7 @@ export default function Index() {
                                     <th
                                         className={`${adminTableTh} ${adminTableCellHiddenMd}`}
                                     >
-                                        Items
+                                        Qty
                                     </th>
                                     <th className={adminTableTh}>Total</th>
                                     <th className={adminTableTh}>Status</th>
@@ -200,6 +201,11 @@ export default function Index() {
                                                 >
                                                     {row.user?.name ?? '—'}
                                                 </p>
+                                                <p
+                                                    className={`${adminTableMobileMeta} sm:hidden text-slate-500`}
+                                                >
+                                                    Qty {row.items_sum_quantity ?? 0}
+                                                </p>
                                                 <p className="mt-1 sm:hidden">
                                                     <span
                                                         className={orderStatusBadgeClass(
@@ -225,7 +231,14 @@ export default function Index() {
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenMd}`}
                                             >
-                                                {row.items_count}
+                                                {row.items_sum_quantity ?? 0}
+                                                {row.items_count > 1 ? (
+                                                    <p
+                                                        className={`${adminTableMobileMeta} text-slate-500`}
+                                                    >
+                                                        {row.items_count} lines
+                                                    </p>
+                                                ) : null}
                                             </td>
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdStrong}`}

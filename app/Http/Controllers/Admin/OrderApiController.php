@@ -53,6 +53,7 @@ class OrderApiController extends Controller
                     'user:id,name,email,phone',
                 ])
                 ->withCount('items')
+                ->withSum('items', 'quantity')
                 ->orderByDesc('placed_at')
                 ->orderByDesc('created_at');
 

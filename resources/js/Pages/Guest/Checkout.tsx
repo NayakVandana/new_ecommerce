@@ -333,7 +333,13 @@ export default function Checkout() {
                 return;
             }
 
-            router.visit(route('user.orders.show', res.data.id));
+            if (res.data.orders_count > 1) {
+                router.visit(
+                    `${route('user.orders.index')}?placed=${res.data.orders_count}`,
+                );
+            } else {
+                router.visit(route('user.orders.show', res.data.id));
+            }
         } catch {
             setError('Could not place order. Please try again.');
         } finally {

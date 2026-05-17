@@ -12,6 +12,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\UserAddress;
 use App\Support\StoreDelivery;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -19,14 +20,17 @@ use RuntimeException;
 class CheckoutService
 {
     /**
+     * One order per cart line (each order has a single product line).
+     *
      * @param  array{
      *     payment_method: string,
      *     shipping_address: array<string, mixed>,
      *     customer_note?: string|null,
      *     save_address?: bool
      * }  $input
+     * @return array{orders: Collection<int, Order>, primary: Order}
      */
-    public function placeOrder(User $user, Cart $cart, array $input): Order
+    public function placeOrder(User $user, Cart $cart, array $input): array
     {
         $method = $input['payment_method'] ?? '';
         $allowed = array_keys(config('checkout.payment_methods', ['cod' => 'Cash on delivery']));
@@ -50,12 +54,10 @@ class CheckoutService
                 throw new RuntimeException('Your cart is empty.');
             }
 
-            $subtotal = round(array_sum(array_column($lines, 'line_total')), 2);
-            $shipping = round((float) config('checkout.shipping_flat', 0), 2);
+            $cartSubtotal = round(array_sum(array_column($lines, 'line_total')), 2);
+            $shippingFlat = round((float) config('checkout.shipping_flat', 0), 2);
             $taxRate = (float) config('checkout.tax_rate', 0);
-            $tax = round($subtotal * $taxRate, 2);
             $discount = 0.0;
-            $grandTotal = round($subtotal + $shipping + $tax - $discount, 2);
 
             $address = null;
             if (! empty($input['save_address'])) {
@@ -74,25 +76,35 @@ class CheckoutService
                 ]);
             }
 
-            $order = Order::query()->create([
-                'order_number' => $this->generateOrderNumber(),
-                'user_id' => $user->id,
-                'status' => config('checkout.initial_order_status', 'pending'),
-                'subtotal' => $subtotal,
-                'tax_total' => $tax,
-                'shipping_total' => $shipping,
-                'discount_total' => $discount,
-                'grand_total' => $grandTotal,
-                'currency' => $cart->currency ?? 'INR',
-                'customer_note' => $input['customer_note'] ?? null,
-                'billing_address_id' => $address?->id,
-                'shipping_address_id' => $address?->id,
-                'billing_snapshot' => $snapshot,
-                'shipping_snapshot' => $snapshot,
-                'placed_at' => now(),
-            ]);
+            $shippingShares = $this->allocateProportional($shippingFlat, $lines, $cartSubtotal);
+            $orders = collect();
+            $lineIndex = 0;
 
             foreach ($lines as $line) {
+                $lineSubtotal = round((float) $line['line_total'], 2);
+                $lineShipping = $shippingShares[$lineIndex] ?? 0.0;
+                $lineTax = round($lineSubtotal * $taxRate, 2);
+                $lineDiscount = $lineIndex === 0 ? $discount : 0.0;
+                $grandTotal = round($lineSubtotal + $lineShipping + $lineTax - $lineDiscount, 2);
+
+                $order = Order::query()->create([
+                    'order_number' => $this->generateOrderNumber(),
+                    'user_id' => $user->id,
+                    'status' => config('checkout.initial_order_status', 'pending'),
+                    'subtotal' => $lineSubtotal,
+                    'tax_total' => $lineTax,
+                    'shipping_total' => $lineShipping,
+                    'discount_total' => $lineDiscount,
+                    'grand_total' => $grandTotal,
+                    'currency' => $cart->currency ?? 'INR',
+                    'customer_note' => $input['customer_note'] ?? null,
+                    'billing_address_id' => $address?->id,
+                    'shipping_address_id' => $address?->id,
+                    'billing_snapshot' => $snapshot,
+                    'shipping_snapshot' => $snapshot,
+                    'placed_at' => now(),
+                ]);
+
                 OrderItem::query()->create([
                     'order_id' => $order->id,
                     'product_variant_id' => $line['product_variant_id'],
@@ -101,33 +113,94 @@ class CheckoutService
                     'sku' => $line['sku'],
                     'unit_price' => $line['unit_price'],
                     'quantity' => $line['quantity'],
-                    'line_total' => $line['line_total'],
+                    'line_total' => $lineSubtotal,
                 ]);
 
                 ProductVariant::query()
                     ->whereKey($line['product_variant_id'])
                     ->decrement('stock_quantity', $line['quantity']);
+
+                Payment::query()->create([
+                    'order_id' => $order->id,
+                    'method' => $method,
+                    'status' => config('checkout.cod_payment_status', 'pending'),
+                    'amount' => $grandTotal,
+                    'currency' => $order->currency,
+                ]);
+
+                OrderStatusHistory::query()->create([
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'note' => 'Order placed — cash on delivery.',
+                    'created_by' => $user->id,
+                ]);
+
+                $orders->push($order->fresh(['items']));
+                $lineIndex++;
             }
-
-            Payment::query()->create([
-                'order_id' => $order->id,
-                'method' => $method,
-                'status' => config('checkout.cod_payment_status', 'pending'),
-                'amount' => $grandTotal,
-                'currency' => $order->currency,
-            ]);
-
-            OrderStatusHistory::query()->create([
-                'order_id' => $order->id,
-                'status' => $order->status,
-                'note' => 'Order placed — cash on delivery.',
-                'created_by' => $user->id,
-            ]);
 
             CartItem::query()->where('cart_id', $cart->id)->delete();
 
-            return $order->fresh(['items']);
+            return [
+                'orders' => $orders,
+                'primary' => $orders->first(),
+            ];
         });
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $lines
+     * @return array<int, float>
+     */
+    protected function allocateProportional(float $total, array $lines, float $cartSubtotal): array
+    {
+        $count = count($lines);
+
+        if ($count === 0) {
+            return [];
+        }
+
+        if ($cartSubtotal <= 0) {
+            return $this->allocateEven($total, $count);
+        }
+
+        $shares = [];
+        $allocated = 0.0;
+
+        foreach ($lines as $index => $line) {
+            if ($index === $count - 1) {
+                $shares[] = round($total - $allocated, 2);
+
+                continue;
+            }
+
+            $portion = round($total * ((float) $line['line_total'] / $cartSubtotal), 2);
+            $shares[] = $portion;
+            $allocated += $portion;
+        }
+
+        return $shares;
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    protected function allocateEven(float $total, int $count): array
+    {
+        $shares = [];
+        $allocated = 0.0;
+        $base = $count > 0 ? round($total / $count, 2) : 0.0;
+
+        for ($i = 0; $i < $count; $i++) {
+            if ($i === $count - 1) {
+                $shares[] = round($total - $allocated, 2);
+            } else {
+                $shares[] = $base;
+                $allocated += $base;
+            }
+        }
+
+        return $shares;
     }
 
     /**
