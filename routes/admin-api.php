@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\CategoryApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
 use App\Http\Controllers\Admin\OrderApiController;
 use App\Http\Controllers\Admin\ProductApiController;
+use App\Http\Controllers\Admin\RecentlyViewedApiController;
+use App\Http\Controllers\Admin\WishlistApiController;
 use App\Http\Controllers\Admin\SubcategoryApiController;
 use App\Http\Controllers\Admin\UserApiController;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +48,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/subcategories/subcategory-destroy', [SubcategoryApiController::class, 'postSubcategoryDestroy']);
 
     Route::post('/users/users-list', [UserApiController::class, 'postUsersList']);
+
+    Route::post('/recently-viewed/recently-viewed-list', [RecentlyViewedApiController::class, 'postRecentlyViewedList']);
+
+    Route::post('/wishlist/wishlist-items-list', [WishlistApiController::class, 'postWishlistItemsList']);
 
     Route::post('/orders/orders-meta', [OrderApiController::class, 'postOrdersMeta']);
     Route::post('/orders/orders-list', [OrderApiController::class, 'postOrdersList']);

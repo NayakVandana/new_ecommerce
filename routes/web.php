@@ -88,6 +88,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('users', fn () => Inertia::render('Admin/Users/Index'))->name('users.index');
 
+    Route::get('recently-viewed', fn () => Inertia::render('Admin/RecentlyViewed/Index'))->name('recently-viewed.index');
+
+    Route::get('wishlist', fn () => Inertia::render('Admin/Wishlist/Index'))->name('wishlist.index');
+
     Route::get('orders', fn () => Inertia::render('Admin/Orders/Index'))->name('orders.index');
     Route::get('orders/{id}', fn (int $id) => Inertia::render('Admin/Orders/Show', ['orderId' => $id]))
         ->whereNumber('id')
