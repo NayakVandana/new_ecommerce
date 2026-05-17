@@ -1,3 +1,12 @@
+export type CatalogSearchSuggestion = {
+    id: number;
+    name: string;
+    slug: string;
+    sku?: string | null;
+    category?: string | null;
+    image_path?: string | null;
+};
+
 export type CatalogColorOption = {
     value: string;
     label: string;

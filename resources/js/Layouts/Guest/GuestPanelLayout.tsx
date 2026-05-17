@@ -1,6 +1,7 @@
 import CartBadge from '@/Components/CartBadge';
 import AccountHeaderButton from '@/Components/store/AccountHeaderButton';
 import FashionAnnouncementBar from '@/Components/store/FashionAnnouncementBar';
+import HeaderCatalogSearch from '@/Components/store/HeaderCatalogSearch';
 import FashionLogo from '@/Components/store/FashionLogo';
 import StoreFixedHeader from '@/Components/store/StoreFixedHeader';
 import StoreFooter from '@/Components/store/StoreFooter';
@@ -96,7 +97,9 @@ function GuestPanelLayoutContent({
                     <div className={storeHeaderInner}>
                         <FashionLogo hideSublineOnMobile />
 
-                        <div className={storeHeaderActions}>
+                        <HeaderCatalogSearch className="col-span-2 w-full lg:col-span-1 lg:max-w-xl lg:justify-self-center" />
+
+                        <div className={`${storeHeaderActions} justify-self-end`}>
                             <CartBadge />
                             {user ? (
                                 <AccountHeaderButton name={user.name} />

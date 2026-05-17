@@ -6,6 +6,7 @@ import type {
     CatalogGender,
     CatalogPaginator,
     CatalogProduct,
+    CatalogSearchSuggestion,
 } from '@/store/catalogTypes';
 import axios from 'axios';
 
@@ -73,6 +74,18 @@ export async function catalogProductsList(
             status: 'published',
             ...filters,
         },
+    );
+
+    return res.data;
+}
+
+export async function catalogSearchSuggestions(
+    keyword: string,
+    limit = 8,
+): Promise<CatalogEnvelope<CatalogSearchSuggestion[]>> {
+    const res = await axios.post<CatalogEnvelope<CatalogSearchSuggestion[]>>(
+        '/api/v1/catalog/search/search-suggestions-list',
+        { keyword: keyword.trim(), limit },
     );
 
     return res.data;

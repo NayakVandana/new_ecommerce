@@ -19,7 +19,30 @@ export const storeHeader =
 export const storeHeaderBar = storeHeader;
 
 export const storeHeaderInner =
-    'mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-3 sm:gap-x-3 sm:px-6 sm:py-4';
+    'mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2 gap-y-2 px-3 py-3 sm:gap-x-3 sm:px-6 sm:py-4 lg:grid-cols-[auto_minmax(12rem,1fr)_auto] lg:grid-rows-1 lg:gap-x-4';
+
+export const storeHeaderSearchForm = 'relative w-full';
+
+export const storeHeaderSearchInput =
+    'w-full border border-stone-300 bg-white py-2 pl-3 pr-10 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-300 dark:focus:ring-stone-300';
+
+export const storeHeaderSearchBtn =
+    'absolute inset-y-0 right-0 flex w-10 items-center justify-center text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100';
+
+export const storeHeaderSearchDropdown =
+    'absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50 max-h-[min(20rem,60dvh)] overflow-y-auto border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900';
+
+export const storeHeaderSearchOption =
+    'flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-stone-100 dark:hover:bg-stone-800';
+
+export const storeHeaderSearchOptionActive =
+    'bg-stone-100 dark:bg-stone-800';
+
+export const storeHeaderSearchOptionMeta =
+    'truncate text-xs text-stone-500 dark:text-stone-400';
+
+export const storeHeaderSearchViewAll =
+    'block w-full border-t border-stone-200 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-700 transition hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800';
 
 export const storeHeaderActions =
     'flex items-center justify-end gap-2 sm:gap-3';

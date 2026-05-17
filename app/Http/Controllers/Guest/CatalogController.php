@@ -156,6 +156,64 @@ class CatalogController extends Controller
         }
     }
 
+    public function postSearchSuggestionsList(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'keyword' => ['required', 'string', 'min:2', 'max:120'],
+                'limit' => ['nullable', 'integer', 'min:1', 'max:12'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $keyword = trim((string) $request->input('keyword'));
+            $limit = (int) $request->input('limit', 8);
+
+            $query = Product::query()
+                ->with([
+                    'subcategory.category',
+                    'images' => fn ($q) => $q
+                        ->whereNull('product_variant_id')
+                        ->orderByDesc('is_primary')
+                        ->orderBy('sort_order')
+                        ->limit(1),
+                ])
+                ->where('status', 'published')
+                ->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', '%'.$keyword.'%')
+                        ->orWhere('slug', 'like', '%'.$keyword.'%')
+                        ->orWhere('base_sku', 'like', '%'.$keyword.'%');
+                });
+
+            $this->applyCatalogScopeFilters($query, $request);
+
+            $products = $query
+                ->orderByDesc('is_featured')
+                ->orderBy('name')
+                ->limit($limit)
+                ->get(['id', 'name', 'slug', 'base_sku', 'subcategory_id']);
+
+            $suggestions = $products->map(function (Product $product) {
+                $image = $product->images->first();
+
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'sku' => $product->base_sku,
+                    'category' => $product->subcategory?->category?->name,
+                    'image_path' => $image?->path,
+                ];
+            })->values();
+
+            return $this->sendJsonResponse(true, 'Search suggestions fetched successfully.', $suggestions, 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
     public function postProductsList(Request $request)
     {
         try {
