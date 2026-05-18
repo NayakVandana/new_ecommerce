@@ -43,4 +43,22 @@ class Coupon extends Model
     {
         return $this->hasMany(CouponUsage::class);
     }
+
+    public function isOncePerUser(): bool
+    {
+        return (int) $this->per_user_limit === 1;
+    }
+
+    public function perUserLimitLabel(): ?string
+    {
+        if ($this->per_user_limit === null) {
+            return null;
+        }
+
+        if ($this->isOncePerUser()) {
+            return 'Once per customer';
+        }
+
+        return sprintf('%d× per customer', (int) $this->per_user_limit);
+    }
 }

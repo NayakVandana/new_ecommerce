@@ -67,6 +67,14 @@ class CouponService
 
     public function recordUsage(Coupon $coupon, User $user, Order $order, float $amountSaved): void
     {
+        $locked = Coupon::query()->whereKey($coupon->id)->lockForUpdate()->first();
+
+        if ($locked) {
+            $coupon = $locked;
+        }
+
+        $this->assertUserRedemptionLimit($coupon, $user);
+
         CouponUsage::query()->create([
             'coupon_id' => $coupon->id,
             'user_id' => $user->id,
@@ -104,15 +112,34 @@ class CouponService
             throw new RuntimeException('This coupon has reached its usage limit.');
         }
 
-        if ($coupon->per_user_limit !== null) {
-            $userUses = CouponUsage::query()
-                ->where('coupon_id', $coupon->id)
-                ->where('user_id', $user->id)
-                ->count();
+        $this->assertUserRedemptionLimit($coupon, $user);
+    }
 
-            if ($userUses >= $coupon->per_user_limit) {
-                throw new RuntimeException('You have already used this coupon the maximum number of times.');
-            }
+    protected function assertUserRedemptionLimit(Coupon $coupon, User $user): void
+    {
+        if ($coupon->per_user_limit === null) {
+            return;
         }
+
+        $userUses = CouponUsage::query()
+            ->where('coupon_id', $coupon->id)
+            ->where('user_id', $user->id)
+            ->count();
+
+        if ($userUses >= $coupon->per_user_limit) {
+            throw new RuntimeException($this->perUserLimitExceededMessage($coupon));
+        }
+    }
+
+    protected function perUserLimitExceededMessage(Coupon $coupon): string
+    {
+        if ((int) $coupon->per_user_limit === 1) {
+            return 'You have already used this coupon. Each customer can use it only once.';
+        }
+
+        return sprintf(
+            'You have already used this coupon the maximum number of times (%d per customer).',
+            (int) $coupon->per_user_limit,
+        );
     }
 }

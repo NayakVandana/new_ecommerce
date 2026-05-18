@@ -40,6 +40,8 @@ type CouponRow = {
     max_uses: number | null;
     used_count: number;
     per_user_limit: number | null;
+    per_user_limit_label: string | null;
+    is_once_per_user: boolean;
     starts_at: string | null;
     ends_at: string | null;
     is_active: boolean;
@@ -172,7 +174,7 @@ export default function Index() {
                                     <th
                                         className={`${adminTableTh} ${adminTableCellHiddenMd}`}
                                     >
-                                        Uses
+                                        Usage limits
                                     </th>
                                     <th
                                         className={`${adminTableTh} ${adminTableCellHiddenMd}`}
@@ -235,15 +237,23 @@ export default function Index() {
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenMd}`}
                                             >
-                                                {row.used_count}
-                                                {row.max_uses !== null
-                                                    ? ` / ${row.max_uses}`
-                                                    : ''}
-                                                {row.per_user_limit !== null ? (
-                                                    <p className={adminTableMobileMeta}>
-                                                        {row.per_user_limit} per user
+                                                <div>
+                                                    Total: {row.used_count}
+                                                    {row.max_uses !== null
+                                                        ? ` / ${row.max_uses}`
+                                                        : ' (no cap)'}
+                                                </div>
+                                                {row.per_user_limit_label ? (
+                                                    <p
+                                                        className={`${adminTableMobileMeta} font-medium text-slate-600 dark:text-slate-400`}
+                                                    >
+                                                        {row.per_user_limit_label}
                                                     </p>
-                                                ) : null}
+                                                ) : (
+                                                    <p className={adminTableMobileMeta}>
+                                                        No per-customer limit
+                                                    </p>
+                                                )}
                                             </td>
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenMd}`}

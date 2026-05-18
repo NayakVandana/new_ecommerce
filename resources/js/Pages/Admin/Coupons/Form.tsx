@@ -28,10 +28,50 @@ type Coupon = {
     min_order_amount: number | null;
     max_uses: number | null;
     per_user_limit: number | null;
+    per_user_limit_label?: string | null;
+    is_once_per_user?: boolean;
     starts_at: string | null;
     ends_at: string | null;
     is_active: boolean;
 };
+
+type PerUserLimitMode = 'none' | 'once' | 'custom';
+
+function perUserLimitModeFromValue(limit: number | '' | null | undefined): PerUserLimitMode {
+    if (limit === '' || limit === null || limit === undefined) {
+        return 'none';
+    }
+
+    const n = typeof limit === 'number' ? limit : Number(limit);
+
+    if (Number.isNaN(n) || n < 1) {
+        return 'none';
+    }
+
+    if (n === 1) {
+        return 'once';
+    }
+
+    return 'custom';
+}
+
+function perUserLimitFromMode(mode: PerUserLimitMode, customValue: string | number): number | null {
+    if (mode === 'none') {
+        return null;
+    }
+
+    if (mode === 'once') {
+        return 1;
+    }
+
+    if (customValue === '') {
+        return null;
+    }
+
+    const n = Number(customValue);
+
+    return Number.isNaN(n) || n < 1 ? null : n;
+}
 
 type PageProps = AppPageProps<{
     couponId: number | null;
@@ -109,7 +149,8 @@ function validateCouponForm(input: {
     endsTime: string;
     minOrderAmount: string | number;
     maxUses: string | number;
-    perUserLimit: string | number;
+    perUserLimitMode: PerUserLimitMode;
+    perUserLimitCustom: string | number;
 }): Record<string, string> {
     const errors: Record<string, string> = {};
     const code = input.code.trim().toUpperCase();
@@ -166,8 +207,12 @@ function validateCouponForm(input: {
     if (input.maxUses !== '' && Number(input.maxUses) < 1) {
         errors.max_uses = 'Max uses must be at least 1.';
     }
-    if (input.perUserLimit !== '' && Number(input.perUserLimit) < 1) {
-        errors.per_user_limit = 'Per customer limit must be at least 1.';
+    if (input.perUserLimitMode === 'custom') {
+        if (input.perUserLimitCustom === '') {
+            errors.per_user_limit = 'Enter how many times each customer may use this coupon.';
+        } else if (Number(input.perUserLimitCustom) < 1) {
+            errors.per_user_limit = 'Per customer limit must be at least 1.';
+        }
     }
 
     return errors;
@@ -190,7 +235,11 @@ export default function Form() {
             value: existing?.value ?? 10,
             minOrderAmount: existing?.min_order_amount ?? '',
             maxUses: existing?.max_uses ?? '',
-            perUserLimit: existing?.per_user_limit ?? '',
+            perUserLimitMode: perUserLimitModeFromValue(existing?.per_user_limit ?? ''),
+            perUserLimitCustom:
+                existing?.per_user_limit != null && existing.per_user_limit > 1
+                    ? existing.per_user_limit
+                    : '',
             startsDate: start.date,
             startsTime: start.time,
             endsDate: end.date,
@@ -204,7 +253,8 @@ export default function Form() {
     const [value, setValue] = useState(10);
     const [minOrderAmount, setMinOrderAmount] = useState<string | number>('');
     const [maxUses, setMaxUses] = useState<string | number>('');
-    const [perUserLimit, setPerUserLimit] = useState<string | number>('');
+    const [perUserLimitMode, setPerUserLimitMode] = useState<PerUserLimitMode>('none');
+    const [perUserLimitCustom, setPerUserLimitCustom] = useState<string | number>('');
     const [startsDate, setStartsDate] = useState('');
     const [startsTime, setStartsTime] = useState('00:00');
     const [endsDate, setEndsDate] = useState('');
@@ -276,7 +326,8 @@ export default function Form() {
         setValue(initial.value);
         setMinOrderAmount(initial.minOrderAmount);
         setMaxUses(initial.maxUses);
-        setPerUserLimit(initial.perUserLimit);
+        setPerUserLimitMode(initial.perUserLimitMode);
+        setPerUserLimitCustom(initial.perUserLimitCustom);
         setStartsDate(initial.startsDate);
         setStartsTime(initial.startsTime);
         setEndsDate(initial.endsDate);
@@ -298,7 +349,8 @@ export default function Form() {
             endsTime,
             minOrderAmount,
             maxUses,
-            perUserLimit,
+            perUserLimitMode,
+            perUserLimitCustom,
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -322,7 +374,7 @@ export default function Form() {
                 min_order_amount:
                     minOrderAmount === '' ? null : Number(minOrderAmount),
                 max_uses: maxUses === '' ? null : Number(maxUses),
-                per_user_limit: perUserLimit === '' ? null : Number(perUserLimit),
+                per_user_limit: perUserLimitFromMode(perUserLimitMode, perUserLimitCustom),
                 starts_at: startsAt,
                 ends_at: endsAt,
                 is_active: isActive,
@@ -490,21 +542,73 @@ export default function Form() {
                                         <p className={adminFieldError}>{fieldErrors.max_uses}</p>
                                     ) : null}
                                 </div>
-                                <div>
-                                    <label htmlFor="per_user" className={adminLabel}>
-                                        Per customer limit (optional)
-                                    </label>
-                                    <input
-                                        id="per_user"
-                                        type="number"
-                                        min={1}
-                                        value={perUserLimit}
-                                        onChange={(e) => {
-                                            setPerUserLimit(e.target.value);
-                                            clearFieldError('per_user_limit');
-                                        }}
-                                        className={adminInput}
-                                    />
+                                <div className="sm:col-span-2">
+                                    <p className={adminLabel}>Per customer usage</p>
+                                    <p className={`mb-3 ${adminMutedText}`}>
+                                        For welcome codes like NEWCOM, choose once per customer.
+                                    </p>
+                                    <fieldset className="space-y-2">
+                                        <label className="flex cursor-pointer items-start gap-2">
+                                            <input
+                                                type="radio"
+                                                name="per_user_limit_mode"
+                                                checked={perUserLimitMode === 'none'}
+                                                onChange={() => {
+                                                    setPerUserLimitMode('none');
+                                                    clearFieldError('per_user_limit');
+                                                }}
+                                                className="mt-1"
+                                            />
+                                            <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                No limit — customer can reuse
+                                            </span>
+                                        </label>
+                                        <label className="flex cursor-pointer items-start gap-2">
+                                            <input
+                                                type="radio"
+                                                name="per_user_limit_mode"
+                                                checked={perUserLimitMode === 'once'}
+                                                onChange={() => {
+                                                    setPerUserLimitMode('once');
+                                                    clearFieldError('per_user_limit');
+                                                }}
+                                                className="mt-1"
+                                            />
+                                            <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                Once per customer (one-time welcome / NEWCOM style)
+                                            </span>
+                                        </label>
+                                        <label className="flex cursor-pointer items-start gap-2">
+                                            <input
+                                                type="radio"
+                                                name="per_user_limit_mode"
+                                                checked={perUserLimitMode === 'custom'}
+                                                onChange={() => {
+                                                    setPerUserLimitMode('custom');
+                                                    clearFieldError('per_user_limit');
+                                                }}
+                                                className="mt-1"
+                                            />
+                                            <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                Custom limit per customer
+                                            </span>
+                                        </label>
+                                    </fieldset>
+                                    {perUserLimitMode === 'custom' ? (
+                                        <input
+                                            id="per_user"
+                                            type="number"
+                                            min={2}
+                                            value={perUserLimitCustom}
+                                            onChange={(e) => {
+                                                setPerUserLimitCustom(e.target.value);
+                                                clearFieldError('per_user_limit');
+                                            }}
+                                            className={`${adminInput} mt-2`}
+                                            placeholder="e.g. 3"
+                                            aria-label="Max uses per customer"
+                                        />
+                                    ) : null}
                                     {fieldErrors.per_user_limit ? (
                                         <p className={adminFieldError}>
                                             {fieldErrors.per_user_limit}

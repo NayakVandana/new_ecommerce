@@ -233,6 +233,8 @@ class CouponApiController extends Controller
             'max_uses' => $coupon->max_uses,
             'used_count' => (int) $coupon->used_count,
             'per_user_limit' => $coupon->per_user_limit,
+            'per_user_limit_label' => $coupon->perUserLimitLabel(),
+            'is_once_per_user' => $coupon->isOncePerUser(),
             'starts_at' => $coupon->starts_at?->toIso8601String(),
             'ends_at' => $coupon->ends_at?->toIso8601String(),
             'is_active' => (bool) $coupon->is_active,
