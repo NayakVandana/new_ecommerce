@@ -7,6 +7,7 @@ use App\Http\Requests\User\CheckoutPlaceRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Cart\CartOwnerService;
+use App\Services\Mail\StoreMailer;
 use App\Services\Order\CheckoutService;
 use App\Support\OrderPresentation;
 use App\Support\StoreDelivery;
@@ -21,6 +22,7 @@ class OrderController extends Controller
     public function __construct(
         protected CartOwnerService $cartOwner,
         protected CheckoutService $checkout,
+        protected StoreMailer $mailer,
     ) {}
 
     public function postCheckoutOptions(Request $request)
@@ -60,6 +62,8 @@ class OrderController extends Controller
             $orders = $result['orders'];
             $primary = $result['primary'];
             $ordersCount = $orders->count();
+
+            $this->mailer->sendOrderPlaced($request->user(), $orders);
 
             $message = $ordersCount > 1
                 ? "{$ordersCount} orders placed successfully (one per item)."

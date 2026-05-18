@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guest;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Mail\StoreMailer;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,10 @@ class AuthController extends Controller
 {
     /** Developer test password (any valid email). */
     private const DEV_TEST_PASSWORD = 'Devloper@1234';
+
+    public function __construct(
+        protected StoreMailer $mailer,
+    ) {}
 
     public function register(Request $request)
     {
@@ -37,6 +42,8 @@ class AuthController extends Controller
                 'is_admin' => false,
                 'status' => 'active',
             ]);
+
+            $this->mailer->sendWelcome($user);
 
             $token = $user->createToken('mobile')->plainTextToken;
 

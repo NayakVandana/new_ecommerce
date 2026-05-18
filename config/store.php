@@ -2,25 +2,12 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Women-only ethnic fashion store
-    |--------------------------------------------------------------------------
-    */
+    'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Selorise')),
 
-    'women_only' => true,
-
-    'women_gender_slug' => 'women',
-
-    'brand_name' => 'Suhaag',
-
-    'brand_tagline' => "Women's ethnic wear",
-
-    /** Top-level shop categories shown in nav & home. */
-    'shop_category_slugs' => [
-        'sarees',
-        'kurtas-suits',
-        'tunics',
+    'mail' => [
+        'enabled' => filter_var(env('ORDER_MAIL_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'admin_notify' => env('MAIL_ADMIN_NOTIFY', env('MAIL_SUPPORT_EMAIL')),
+        'support' => env('MAIL_SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS')),
     ],
 
 ];

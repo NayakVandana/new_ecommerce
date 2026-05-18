@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Mail\StoreMailer;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,10 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
+    public function __construct(
+        protected StoreMailer $mailer,
+    ) {}
+
     /**
      * Display the registration view.
      */
@@ -49,6 +54,8 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        $this->mailer->sendWelcome($user);
 
         Auth::login($user);
 
