@@ -1,4 +1,5 @@
 import CartLinePricing from '@/Components/store/CartLinePricing';
+import OrderStatusTimeline from '@/Components/store/OrderStatusTimeline';
 import PricingSummary from '@/Components/store/PricingSummary';
 import {
     storeBtnSecondary,
@@ -228,33 +229,20 @@ export default function Show() {
                                 </div>
                             </div>
 
-                            {histories.length > 0 ? (
-                                <div className={storeCard}>
-                                    <h2 className="text-base font-semibold text-stone-900 dark:text-white">
-                                        Status history
-                                    </h2>
-                                    <ul className="mt-4 space-y-3">
-                                        {histories.map((h) => (
-                                            <li
-                                                key={h.id}
-                                                className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3 last:border-0 dark:border-stone-800"
-                                            >
-                                                <span className={orderStatusBadgeClass(h.status)}>
-                                                    {h.status}
-                                                </span>
-                                                <span className="text-xs text-stone-500">
-                                                    {formatOrderDate(h.created_at)}
-                                                </span>
-                                                {h.note ? (
-                                                    <p className="w-full text-sm text-stone-600 dark:text-stone-400">
-                                                        {h.note}
-                                                    </p>
-                                                ) : null}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ) : null}
+                            <div className={storeCard}>
+                                <h2 className="text-base font-semibold text-stone-900 dark:text-white">
+                                    Order status
+                                </h2>
+                                <p className={`mt-1 text-sm ${storeMutedText}`}>
+                                    Top to bottom: Pending through Delivered.
+                                </p>
+                                <OrderStatusTimeline
+                                    currentStatus={order.status}
+                                    histories={histories}
+                                    variant="store"
+                                    className="mt-6"
+                                />
+                            </div>
                         </div>
 
                         <aside className={`${storeCard} h-fit lg:sticky lg:top-24`}>

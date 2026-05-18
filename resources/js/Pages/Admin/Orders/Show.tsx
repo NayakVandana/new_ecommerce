@@ -19,6 +19,7 @@ import {
     type AdminApiEnvelope,
 } from '@/api/adminClient';
 import CartLinePricing from '@/Components/store/CartLinePricing';
+import OrderStatusTimeline from '@/Components/store/OrderStatusTimeline';
 import PricingSummary from '@/Components/store/PricingSummary';
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
@@ -527,52 +528,20 @@ export default function Show() {
                                     </section>
                                 ) : null}
 
-                                {histories.length > 0 ? (
-                                    <section className={adminFormSection}>
-                                        <h2 className={adminFormSectionTitle}>
-                                            Status history
-                                        </h2>
-                                        <ul className="mt-4 space-y-3">
-                                            {histories.map((h) => (
-                                                <li
-                                                    key={h.id}
-                                                    className="border-b border-slate-100 pb-3 last:border-0 dark:border-slate-800"
-                                                >
-                                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                                        <span
-                                                            className={orderStatusBadgeClass(
-                                                                h.status,
-                                                            )}
-                                                        >
-                                                            {h.status}
-                                                        </span>
-                                                        <span
-                                                            className={
-                                                                adminMutedText
-                                                            }
-                                                        >
-                                                            {formatOrderDate(
-                                                                h.created_at,
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    {h.creator?.name ? (
-                                                        <p
-                                                            className={`mt-1 text-xs ${adminMutedText}`}
-                                                        >
-                                                            by {h.creator.name}
-                                                        </p>
-                                                    ) : null}
-                                                    {h.note ? (
-                                                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                                                            {h.note}
-                                                        </p>
-                                                    ) : null}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </section>
-                                ) : null}
+                                <section className={adminFormSection}>
+                                    <h2 className={adminFormSectionTitle}>
+                                        Order status
+                                    </h2>
+                                    <p className={`mt-1 text-sm ${adminMutedText}`}>
+                                        Top to bottom: Pending through Delivered.
+                                    </p>
+                                    <OrderStatusTimeline
+                                        currentStatus={order.status}
+                                        histories={histories}
+                                        variant="admin"
+                                        className="mt-6"
+                                    />
+                                </section>
                             </div>
 
                             <aside className="space-y-6">
