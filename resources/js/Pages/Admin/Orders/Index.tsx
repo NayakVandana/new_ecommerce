@@ -23,6 +23,7 @@ import {
     type AdminApiEnvelope,
     type LaravelPaginator,
 } from '@/api/adminClient';
+import AdminProductCell from '@/Components/admin/AdminProductCell';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { formatMoney, formatOrderDate, orderStatusBadgeClass } from '@/store/orderStatus';
 import { Head, Link } from '@inertiajs/react';
@@ -46,6 +47,11 @@ type OrderRow = {
     items_count: number;
     items_sum_quantity: number | null;
     user?: OrderUser | null;
+    product_id?: number | null;
+    product_name?: string | null;
+    product_slug?: string | null;
+    product_thumb_url?: string | null;
+    extra_items_count?: number;
 };
 
 type StatusOption = { id: string; label: string };
@@ -155,7 +161,12 @@ export default function Index() {
                         <table className={adminTable}>
                             <thead className={adminTableHead}>
                                 <tr>
-                                    <th className={adminTableTh}>Order</th>
+                                    <th className={adminTableTh}>Product</th>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenSm}`}
+                                    >
+                                        Order
+                                    </th>
                                     <th
                                         className={`${adminTableTh} ${adminTableCellHiddenSm}`}
                                     >
@@ -182,7 +193,7 @@ export default function Index() {
                                 {loading && (
                                     <tr>
                                         <td
-                                            colSpan={7}
+                                            colSpan={8}
                                             className={`px-5 py-10 text-center ${adminMutedText}`}
                                         >
                                             Loading…
@@ -196,22 +207,46 @@ export default function Index() {
                                             className={adminTableRowHover}
                                         >
                                             <td className={adminTableTd}>
+                                                {row.product_name ? (
+                                                    <AdminProductCell
+                                                        name={row.product_name}
+                                                        thumbUrl={
+                                                            row.product_thumb_url
+                                                        }
+                                                        slug={
+                                                            row.product_slug ??
+                                                            undefined
+                                                        }
+                                                        meta={
+                                                            <span className="text-slate-500">
+                                                                <span className="text-slate-600 dark:text-slate-400 md:hidden">
+                                                                    {row.order_number}
+                                                                </span>
+                                                                {(row.extra_items_count ??
+                                                                    0) > 0 ? (
+                                                                    <>
+                                                                        <span className="md:hidden">
+                                                                            {' '}
+                                                                            ·{' '}
+                                                                        </span>
+                                                                        +{row.extra_items_count}{' '}
+                                                                        more
+                                                                    </>
+                                                                ) : null}
+                                                            </span>
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <AdminProductCell
+                                                        name="—"
+                                                        meta={row.order_number}
+                                                    />
+                                                )}
                                                 <p
-                                                    className={
-                                                        adminTableTdStrong
-                                                    }
+                                                    className={`${adminTableMobileMeta} mt-2 sm:hidden`}
                                                 >
-                                                    {row.order_number}
-                                                </p>
-                                                <p
-                                                    className={`${adminTableMobileMeta} sm:hidden`}
-                                                >
-                                                    {row.user?.name ?? '—'}
-                                                </p>
-                                                <p
-                                                    className={`${adminTableMobileMeta} sm:hidden text-slate-500`}
-                                                >
-                                                    Qty {row.items_sum_quantity ?? 0}
+                                                    {row.user?.name ?? '—'} · Qty{' '}
+                                                    {row.items_sum_quantity ?? 0}
                                                 </p>
                                                 <p className="mt-1 sm:hidden">
                                                     <span
@@ -222,6 +257,11 @@ export default function Index() {
                                                         {row.status}
                                                     </span>
                                                 </p>
+                                            </td>
+                                            <td
+                                                className={`${adminTableTd} ${adminTableTdStrong} ${adminTableCellHiddenSm}`}
+                                            >
+                                                {row.order_number}
                                             </td>
                                             <td
                                                 className={`${adminTableTd} ${adminTableCellHiddenSm}`}
@@ -289,7 +329,7 @@ export default function Index() {
                                     paginator.data.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={7}
+                                                colSpan={8}
                                                 className={`px-5 py-10 text-center ${adminMutedText}`}
                                             >
                                                 No orders found.

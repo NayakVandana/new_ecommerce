@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RecentlyViewedProduct;
+use App\Support\ProductThumbnail;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -32,7 +33,9 @@ class RecentlyViewedApiController extends Controller
                 ->whereNotNull('user_id')
                 ->with([
                     'user:id,name,email',
-                    'product:id,name,slug,base_sku,status',
+                    'product' => fn ($q) => $q
+                        ->select('id', 'name', 'slug', 'base_sku', 'status')
+                        ->with(ProductThumbnail::productMediaEagerConstraints()),
                 ])
                 ->orderByDesc('viewed_at');
 
@@ -72,6 +75,7 @@ class RecentlyViewedApiController extends Controller
                     'product_slug' => $row->product?->slug,
                     'product_sku' => $row->product?->base_sku,
                     'product_status' => $row->product?->status,
+                    'product_thumb_url' => ProductThumbnail::forProduct($row->product),
                 ];
             });
 

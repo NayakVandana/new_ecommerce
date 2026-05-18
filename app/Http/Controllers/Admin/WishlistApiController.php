@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\WishlistItem;
+use App\Support\ProductThumbnail;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -32,7 +33,9 @@ class WishlistApiController extends Controller
                 ->with([
                     'wishlist.user:id,name,email',
                     'productVariant:id,product_id,sku,size,color,price,stock_quantity',
-                    'productVariant.product:id,name,slug,base_sku,status',
+                    'productVariant.product' => fn ($q) => $q
+                        ->select('id', 'name', 'slug', 'base_sku', 'status')
+                        ->with(ProductThumbnail::productMediaEagerConstraints()),
                 ])
                 ->whereHas('wishlist', fn ($q) => $q->whereNotNull('user_id'))
                 ->orderByDesc('created_at');
@@ -87,6 +90,7 @@ class WishlistApiController extends Controller
                     'unit_price' => $variant?->price !== null ? (float) $variant->price : null,
                     'stock_quantity' => $variant?->stock_quantity,
                     'in_stock' => $variant ? $variant->stock_quantity > 0 : null,
+                    'product_thumb_url' => ProductThumbnail::forProduct($product),
                 ];
             });
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Support\OrderPresentation;
+use App\Support\ProductThumbnail;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,14 @@ class OrderApiController extends Controller
             $query = Order::query()
                 ->with([
                     'user:id,name,email,phone',
+                    'items' => fn ($q) => $q
+                        ->orderBy('id')
+                        ->limit(1)
+                        ->with([
+                            'productVariant.product' => fn ($pq) => $pq->with(
+                                ProductThumbnail::productMediaEagerConstraints(),
+                            ),
+                        ]),
                 ])
                 ->withCount('items')
                 ->withSum('items', 'quantity')
@@ -84,6 +93,32 @@ class OrderApiController extends Controller
                 'placed_at',
                 'created_at',
             ], 'page', $currentPage);
+
+            $orders->getCollection()->transform(function (Order $order) {
+                $firstItem = $order->items->first();
+                $product = $firstItem?->productVariant?->product;
+                $extraItems = max(0, (int) $order->items_count - 1);
+
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'grand_total' => $order->grand_total,
+                    'currency' => $order->currency,
+                    'placed_at' => $order->placed_at?->toIso8601String(),
+                    'created_at' => $order->created_at?->toIso8601String(),
+                    'items_count' => (int) $order->items_count,
+                    'items_sum_quantity' => $order->items_sum_quantity !== null
+                        ? (int) $order->items_sum_quantity
+                        : null,
+                    'user' => $order->user,
+                    'product_id' => $product?->id,
+                    'product_name' => $firstItem?->product_name ?? $product?->name,
+                    'product_slug' => $product?->slug,
+                    'product_thumb_url' => ProductThumbnail::forProduct($product),
+                    'extra_items_count' => $extraItems,
+                ];
+            });
 
             return $this->sendJsonResponse(true, 'Orders fetched successfully.', $orders, 200);
         } catch (Exception $e) {

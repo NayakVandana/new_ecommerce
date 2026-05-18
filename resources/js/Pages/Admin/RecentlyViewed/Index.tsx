@@ -22,8 +22,9 @@ import {
     type AdminApiEnvelope,
     type LaravelPaginator,
 } from '@/api/adminClient';
+import AdminProductCell from '@/Components/admin/AdminProductCell';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 
 type RecentlyViewedRow = {
@@ -37,6 +38,7 @@ type RecentlyViewedRow = {
     product_slug: string | null;
     product_sku: string | null;
     product_status: string | null;
+    product_thumb_url: string | null;
 };
 
 function formatDateTime(value: string | null): string {
@@ -128,8 +130,12 @@ export default function Index() {
                         <table className={adminTable}>
                             <thead className={adminTableHead}>
                                 <tr>
-                                    <th className={adminTableTh}>User</th>
                                     <th className={adminTableTh}>Product</th>
+                                    <th
+                                        className={`${adminTableTh} ${adminTableCellHiddenSm}`}
+                                    >
+                                        User
+                                    </th>
                                     <th
                                         className={`${adminTableTh} ${adminTableCellHiddenSm}`}
                                     >
@@ -168,6 +174,20 @@ export default function Index() {
                                     paginator?.data.map((row) => (
                                         <tr key={row.id} className={adminTableRowHover}>
                                             <td className={adminTableTd}>
+                                                <AdminProductCell
+                                                    name={row.product_name ?? '—'}
+                                                    thumbUrl={row.product_thumb_url}
+                                                    slug={row.product_slug ?? undefined}
+                                                    meta={
+                                                        <span className="text-slate-600 dark:text-slate-400 sm:hidden">
+                                                            {row.user_name ?? '—'}
+                                                        </span>
+                                                    }
+                                                />
+                                            </td>
+                                            <td
+                                                className={`${adminTableTd} ${adminTableCellHiddenSm}`}
+                                            >
                                                 <div className={adminTableTdStrong}>
                                                     {row.user_name ?? '—'}
                                                 </div>
@@ -176,30 +196,6 @@ export default function Index() {
                                                 >
                                                     {row.user_email ?? '—'}
                                                 </p>
-                                            </td>
-                                            <td className={adminTableTd}>
-                                                {row.product_id ? (
-                                                    <Link
-                                                        href={route(
-                                                            'admin.products.edit',
-                                                            row.product_id,
-                                                        )}
-                                                        className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                                                    >
-                                                        {row.product_name ?? '—'}
-                                                    </Link>
-                                                ) : (
-                                                    <span className={adminTableTdStrong}>
-                                                        {row.product_name ?? '—'}
-                                                    </span>
-                                                )}
-                                                {row.product_slug ? (
-                                                    <p
-                                                        className={`${adminTableMobileMeta} text-slate-500`}
-                                                    >
-                                                        {row.product_slug}
-                                                    </p>
-                                                ) : null}
                                             </td>
                                             <td
                                                 className={`${adminTableTd} ${adminTableTdMuted} ${adminTableCellHiddenSm}`}
