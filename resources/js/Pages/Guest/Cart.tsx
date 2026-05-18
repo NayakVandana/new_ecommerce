@@ -4,6 +4,9 @@ import {
     type CartLineItem,
     type CartPayload,
 } from '@/api/cartClient';
+import { estimateCheckoutTotals, orderStore, type CheckoutOptions } from '@/api/orderClient';
+import CartLinePricing from '@/Components/store/CartLinePricing';
+import CartOrderSummary from '@/Components/store/CartOrderSummary';
 import { formatMoney } from '@/store/orderStatus';
 import {
     storeBtnPrimary,
@@ -19,25 +22,28 @@ import GuestPanelLayout from '@/Layouts/Guest/GuestPanelLayout';
 import { useAuthUser } from '@/auth/useAuthUser';
 import { redirectToLogin } from '@/utils/requireAuth';
 import { Head, Link } from '@inertiajs/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function Cart() {
     const { user, loading: authLoading } = useAuthUser();
     const [cart, setCart] = useState<CartPayload | null>(null);
+    const [checkoutOptions, setCheckoutOptions] = useState<CheckoutOptions | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [busyId, setBusyId] = useState<number | null>(null);
 
     const load = useCallback(() => {
         setLoading(true);
-        cartStore
-            .list()
-            .then((res) => {
-                if (res.success && res.data) {
-                    setCart(res.data);
+        Promise.all([cartStore.list(), orderStore.checkoutOptions()])
+            .then(([cartRes, optionsRes]) => {
+                if (cartRes.success && cartRes.data) {
+                    setCart(cartRes.data);
                     setError(null);
                 } else {
-                    setError(res.message || 'Could not load cart.');
+                    setError(cartRes.message || 'Could not load cart.');
+                }
+                if (optionsRes.success && optionsRes.data) {
+                    setCheckoutOptions(optionsRes.data);
                 }
             })
             .catch(() => setError('Could not load cart.'))
@@ -58,6 +64,16 @@ export default function Cart() {
 
         return () => window.removeEventListener('cartUpdated', load);
     }, [load, user, authLoading]);
+
+    const currency = cart?.currency ?? checkoutOptions?.currency ?? 'INR';
+
+    const checkoutTotals = useMemo(() => {
+        if (!cart || !checkoutOptions) {
+            return null;
+        }
+
+        return estimateCheckoutTotals(cart.subtotal, checkoutOptions);
+    }, [cart, checkoutOptions]);
 
     const updateQty = async (item: CartLineItem, quantity: number) => {
         if (quantity < 1) {
@@ -132,7 +148,7 @@ export default function Cart() {
                     </Link>
                 </div>
             ) : (
-                <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+                <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
                     <ul className="space-y-4">
                         {items.map((item) => {
                             const src = cartImageSrc(item.image_path);
@@ -144,26 +160,24 @@ export default function Cart() {
                                             href={route('guest.catalog')}
                                             className="h-20 w-20 shrink-0 overflow-hidden bg-stone-200 sm:h-24 sm:w-24 dark:bg-stone-800"
                                         >
-                                        {src ? (
-                                            <img
-                                                src={src}
-                                                alt=""
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                                                No image
-                                            </div>
-                                        )}
-                                    </Link>
+                                            {src ? (
+                                                <img
+                                                    src={src}
+                                                    alt=""
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                                                    No image
+                                                </div>
+                                            )}
+                                        </Link>
                                         <div className="min-w-0 flex-1">
                                             <p className="font-medium text-stone-900 dark:text-stone-50">
                                                 {item.product_name}
                                             </p>
                                             <p className="text-xs text-stone-500">{item.variant_label}</p>
-                                            <p className="mt-1 text-sm font-medium text-stone-800 dark:text-stone-200">
-                                                {formatMoney(item.unit_price, cart?.currency ?? 'INR')}
-                                            </p>
+                                            <CartLinePricing item={item} currency={currency} />
                                             <div className="mt-3 flex flex-wrap items-center gap-3">
                                                 <label className="flex items-center gap-2 text-sm">
                                                     <span className="text-stone-500">Qty</span>
@@ -193,55 +207,55 @@ export default function Cart() {
                                             </div>
                                         </div>
                                     </div>
-                                    <p className="text-sm font-semibold text-stone-900 sm:text-right dark:text-stone-50">
-                                        {formatMoney(item.line_total, cart?.currency ?? 'INR')}
-                                    </p>
+                                    <div className="text-right sm:min-w-[7rem]">
+                                        {(item.line_mrp_total ?? item.line_total) >
+                                        item.line_total + 0.009 ? (
+                                            <p className="text-xs text-stone-500 line-through">
+                                                {formatMoney(
+                                                    item.line_mrp_total ?? item.line_total,
+                                                    currency,
+                                                )}
+                                            </p>
+                                        ) : null}
+                                        <p className="text-sm font-semibold text-stone-900 dark:text-stone-50">
+                                            {formatMoney(item.line_total, currency)}
+                                        </p>
+                                    </div>
                                 </li>
                             );
                         })}
                     </ul>
 
-                    <aside className={`${storeCard} h-fit lg:sticky lg:top-24`}>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                            Order summary
-                        </h2>
-                        <dl className="mt-4 space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">Items ({cart?.count ?? 0})</dt>
-                                <dd className="font-medium text-slate-900 dark:text-white">
-                                    {formatMoney(cart?.subtotal ?? 0, cart?.currency ?? 'INR')}
-                                </dd>
+                    {cart ? (
+                        <aside className={`${storeCard} h-fit lg:sticky lg:top-24`}>
+                            <CartOrderSummary
+                                cart={cart}
+                                currency={currency}
+                                checkoutTotals={checkoutTotals}
+                            />
+                            <div className="mt-6 flex flex-col gap-3">
+                                <Link
+                                    href={route('guest.checkout')}
+                                    className={`${storeBtnPrimary} text-center`}
+                                >
+                                    Proceed to checkout
+                                </Link>
+                                <Link
+                                    href={route('guest.catalog')}
+                                    className={`${storeBtnSecondary} text-center`}
+                                >
+                                    Continue shopping
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => void clearCart()}
+                                    className="text-sm font-medium text-red-600 dark:text-red-400"
+                                >
+                                    Clear cart
+                                </button>
                             </div>
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">Shipping</dt>
-                                <dd className="text-stone-600 dark:text-stone-400">At checkout</dd>
-                            </div>
-                        </dl>
-                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
-                            <span className="font-semibold text-slate-900 dark:text-white">Subtotal</span>
-                            <span className="text-lg font-bold text-slate-900 dark:text-white">
-                                {formatMoney(cart?.subtotal ?? 0, cart?.currency ?? 'INR')}
-                            </span>
-                        </div>
-                        <p className={`mt-2 ${storeMutedText}`}>
-                            Cash on delivery only. Complete checkout to confirm your order.
-                        </p>
-                        <div className="mt-6 flex flex-col gap-3">
-                            <Link href={route('guest.checkout')} className={`${storeBtnPrimary} text-center`}>
-                                Proceed to checkout
-                            </Link>
-                            <Link href={route('guest.catalog')} className={`${storeBtnSecondary} text-center`}>
-                                Continue shopping
-                            </Link>
-                            <button
-                                type="button"
-                                onClick={() => void clearCart()}
-                                className="text-sm font-medium text-red-600 dark:text-red-400"
-                            >
-                                Clear cart
-                            </button>
-                        </div>
-                    </aside>
+                        </aside>
+                    ) : null}
                 </div>
             )}
         </GuestPanelLayout>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Order\OrderInvoiceService;
+use App\Support\OrderPresentation;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\Request;
@@ -32,8 +33,14 @@ class OrderInvoiceController extends Controller
                 return $this->sendJsonResponse(false, 'Order not found.', null, 200);
             }
 
+            $summary = OrderPresentation::summarize($order);
+
             $pdf = Pdf::loadView('invoices.order', [
                 'order' => $order,
+                'lineItems' => $summary['items'],
+                'mrpSubtotal' => $summary['mrp_subtotal'],
+                'productDiscountTotal' => $summary['product_discount_total'],
+                'itemCount' => $summary['item_count'],
                 'brand' => 'Suhaag',
                 'statusLabel' => $this->invoiceService->statusLabel($order->status),
                 'billingLines' => $this->invoiceService->formatAddressLines($order->address_of_bill_to),

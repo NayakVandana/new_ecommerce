@@ -18,6 +18,8 @@ import {
     adminApiPost,
     type AdminApiEnvelope,
 } from '@/api/adminClient';
+import CartLinePricing from '@/Components/store/CartLinePricing';
+import PricingSummary from '@/Components/store/PricingSummary';
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
 import {
@@ -43,9 +45,13 @@ type OrderItem = {
     product_name: string;
     variant_label: string | null;
     sku: string;
-    unit_price: string | number;
+    unit_price: number;
+    compare_at_price: number | null;
+    discount_percent: number;
     quantity: number;
-    line_total: string | number;
+    line_total: number;
+    line_mrp_total: number;
+    line_discount: number;
 };
 
 type StatusHistory = {
@@ -80,6 +86,9 @@ type OrderDetail = {
     shipping_total: string | number;
     discount_total: string | number;
     grand_total: string | number;
+    mrp_subtotal: number;
+    product_discount_total: number;
+    item_count: number;
     currency: string;
     customer_note: string | null;
     placed_at: string | null;
@@ -112,6 +121,10 @@ function formatAddress(snapshot: AddressSnapshot | null | undefined): string | n
     ].filter(Boolean);
 
     return lines.join('\n');
+}
+
+function num(value: string | number): number {
+    return typeof value === 'number' ? value : Number.parseFloat(String(value)) || 0;
 }
 
 export default function Show() {
@@ -228,6 +241,7 @@ export default function Show() {
     const payments = order?.payments ?? [];
     const billToText = formatAddress(order?.address_of_bill_to);
     const shipToText = formatAddress(order?.address_of_ship_to);
+    const currency = order?.currency ?? 'INR';
 
     return (
         <>
@@ -340,64 +354,6 @@ export default function Show() {
                                         </dl>
                                     ) : null}
 
-                                    <dl className="mt-4 grid gap-3 border-t border-slate-100 pt-4 text-sm dark:border-slate-800 sm:grid-cols-2">
-                                        <div>
-                                            <dt className={adminMutedText}>
-                                                Subtotal
-                                            </dt>
-                                            <dd className="font-medium text-slate-900 dark:text-white">
-                                                {formatMoney(
-                                                    order.subtotal,
-                                                    order.currency,
-                                                )}
-                                            </dd>
-                                        </div>
-                                        <div>
-                                            <dt className={adminMutedText}>
-                                                Shipping
-                                            </dt>
-                                            <dd className="font-medium text-slate-900 dark:text-white">
-                                                {formatMoney(
-                                                    order.shipping_total,
-                                                    order.currency,
-                                                )}
-                                            </dd>
-                                        </div>
-                                        <div>
-                                            <dt className={adminMutedText}>
-                                                Tax
-                                            </dt>
-                                            <dd className="font-medium text-slate-900 dark:text-white">
-                                                {formatMoney(
-                                                    order.tax_total,
-                                                    order.currency,
-                                                )}
-                                            </dd>
-                                        </div>
-                                        <div>
-                                            <dt className={adminMutedText}>
-                                                Discount
-                                            </dt>
-                                            <dd className="font-medium text-slate-900 dark:text-white">
-                                                {formatMoney(
-                                                    order.discount_total,
-                                                    order.currency,
-                                                )}
-                                            </dd>
-                                        </div>
-                                        <div className="sm:col-span-2">
-                                            <dt className={adminMutedText}>
-                                                Total
-                                            </dt>
-                                            <dd className="text-lg font-bold text-slate-900 dark:text-white">
-                                                {formatMoney(
-                                                    order.grand_total,
-                                                    order.currency,
-                                                )}
-                                            </dd>
-                                        </div>
-                                    </dl>
-
                                     {order.customer_note ? (
                                         <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400">
                                             <span className="font-medium text-slate-800 dark:text-slate-200">
@@ -455,6 +411,11 @@ export default function Show() {
                                                     <th className={adminTableTh}>
                                                         Product
                                                     </th>
+                                                    <th
+                                                        className={`${adminTableTh} hidden sm:table-cell`}
+                                                    >
+                                                        Unit price
+                                                    </th>
                                                     <th className={adminTableTh}>
                                                         Qty
                                                     </th>
@@ -489,9 +450,20 @@ export default function Show() {
                                                                     }
                                                                 </p>
                                                             ) : null}
-                                                            <p className="text-xs text-slate-400">
-                                                                SKU {item.sku}
-                                                            </p>
+                                                            <div className="mt-1 sm:hidden">
+                                                                <CartLinePricing
+                                                                    item={item}
+                                                                    currency={currency}
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                        <td
+                                                            className={`${adminTableTd} hidden sm:table-cell`}
+                                                        >
+                                                            <CartLinePricing
+                                                                item={item}
+                                                                currency={currency}
+                                                            />
                                                         </td>
                                                         <td
                                                             className={
@@ -503,10 +475,20 @@ export default function Show() {
                                                         <td
                                                             className={`${adminTableTd} text-right`}
                                                         >
-                                                            {formatMoney(
-                                                                item.line_total,
-                                                                order.currency,
-                                                            )}
+                                                            {item.line_discount > 0.009 ? (
+                                                                <p className="text-xs text-slate-500 line-through">
+                                                                    {formatMoney(
+                                                                        item.line_mrp_total,
+                                                                        currency,
+                                                                    )}
+                                                                </p>
+                                                            ) : null}
+                                                            <p className="font-semibold text-slate-900 dark:text-white">
+                                                                {formatMoney(
+                                                                    item.line_total,
+                                                                    currency,
+                                                                )}
+                                                            </p>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -593,7 +575,27 @@ export default function Show() {
                                 ) : null}
                             </div>
 
-                            <aside>
+                            <aside className="space-y-6">
+                                <section className={adminFormSection}>
+                                    <PricingSummary
+                                        currency={currency}
+                                        itemCount={
+                                            order.item_count ??
+                                            items.reduce((n, i) => n + i.quantity, 0)
+                                        }
+                                        mrpSubtotal={num(order.mrp_subtotal ?? order.subtotal)}
+                                        productDiscountTotal={num(
+                                            order.product_discount_total ?? 0,
+                                        )}
+                                        subtotal={num(order.subtotal)}
+                                        shippingTotal={num(order.shipping_total)}
+                                        taxTotal={num(order.tax_total)}
+                                        discountTotal={num(order.discount_total)}
+                                        grandTotal={num(order.grand_total)}
+                                        title="Payment summary"
+                                        footerNote="Cash on delivery."
+                                    />
+                                </section>
                                 <form
                                     onSubmit={onUpdateStatus}
                                     className={adminFormSection}

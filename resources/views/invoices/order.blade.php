@@ -56,12 +56,23 @@
         }
         .totals td { padding: 4px 0; }
         .totals .label { color: #64748b; }
-        .totals .value { text-align: right; font-weight: 600; }
+        .totals .value { text-align: right; }
         .totals .grand td {
             border-top: 2px solid #c4b5fd;
             padding-top: 8px;
             font-size: 13px;
             color: #5b21b6;
+        }
+        .totals .savings td { color: #047857; }
+        .price-mrp {
+            text-decoration: line-through;
+            color: #94a3b8;
+            font-size: 9px;
+            display: block;
+        }
+        .price-off {
+            color: #047857;
+            font-size: 9px;
         }
         .payments { margin-top: 20px; }
         .payments table { width: 100%; border-collapse: collapse; }
@@ -83,10 +94,25 @@
 </head>
 <body>
 @php
+    // DomPDF + DejaVu Sans: avoid ₹ and bold weights (glyphs render as "?"). Use "Rs." on PDFs.
     $currency = $order->currency ?: 'INR';
-    $symbol = $currency === 'INR' ? '₹' : $currency.' ';
-    $money = static function ($amount) use ($symbol) {
-        return $symbol . number_format((float) $amount, 2);
+    $money = static function ($amount) use ($currency) {
+        $formatted = number_format((float) $amount, 2);
+
+        if ($currency === 'INR') {
+            return 'Rs. '.$formatted;
+        }
+
+        return trim($currency).' '.$formatted;
+    };
+    $moneyDeduction = static function ($amount) use ($currency) {
+        $formatted = number_format(abs((float) $amount), 2);
+
+        if ($currency === 'INR') {
+            return 'Rs. -'.$formatted;
+        }
+
+        return '-'.trim($currency).' '.$formatted;
     };
 @endphp
 
@@ -151,18 +177,38 @@
         </tr>
     </thead>
     <tbody>
-        @foreach ($order->items as $item)
+        @foreach ($lineItems as $item)
+            @php
+                $hasDiscount = ! empty($item['compare_at_price'])
+                    && (float) $item['compare_at_price'] > (float) $item['unit_price'] + 0.009;
+            @endphp
             <tr>
                 <td>
-                    <strong>{{ $item->product_name }}</strong>
-                    @if ($item->variant_label)
-                        <br><span class="muted">{{ $item->variant_label }}</span>
+                    <strong>{{ $item['product_name'] }}</strong>
+                    @if (! empty($item['variant_label']))
+                        <br><span class="muted">{{ $item['variant_label'] }}</span>
+                    @endif
+                    @if ($hasDiscount && (float) ($item['line_discount'] ?? 0) > 0)
+                        <br><span class="price-off">You save {{ $money($item['line_discount']) }}</span>
                     @endif
                 </td>
-                <td>{{ $item->sku }}</td>
-                <td class="num">{{ $item->quantity }}</td>
-                <td class="num">{{ $money($item->unit_price) }}</td>
-                <td class="num">{{ $money($item->line_total) }}</td>
+                <td>{{ $item['sku'] }}</td>
+                <td class="num">{{ $item['quantity'] }}</td>
+                <td class="num">
+                    @if ($hasDiscount)
+                        <span class="price-mrp">{{ $money($item['compare_at_price']) }}</span>
+                    @endif
+                    {{ $money($item['unit_price']) }}
+                    @if ($hasDiscount && (float) ($item['discount_percent'] ?? 0) > 0)
+                        <br><span class="price-off">{{ number_format((float) $item['discount_percent'], $item['discount_percent'] == floor($item['discount_percent']) ? 0 : 1) }}% off</span>
+                    @endif
+                </td>
+                <td class="num">
+                    @if ($hasDiscount)
+                        <span class="price-mrp">{{ $money($item['line_mrp_total']) }}</span>
+                    @endif
+                    {{ $money($item['line_total']) }}
+                </td>
             </tr>
         @endforeach
     </tbody>
@@ -170,23 +216,41 @@
 
 <table class="totals">
     <tr>
-        <td class="label">Subtotal</td>
-        <td class="value">{{ $money($order->subtotal) }}</td>
+        <td class="label">Items ({{ $itemCount }})</td>
+        <td class="value">{{ $money($mrpSubtotal) }}</td>
     </tr>
-    @if ((float) $order->discount_total > 0)
-        <tr>
-            <td class="label">Discount</td>
-            <td class="value">−{{ $money($order->discount_total) }}</td>
+    @if ((float) $productDiscountTotal > 0.009)
+        <tr class="savings">
+            <td class="label">Discount on MRP</td>
+            <td class="value">{{ $moneyDeduction($productDiscountTotal) }}</td>
         </tr>
     @endif
     <tr>
-        <td class="label">Shipping</td>
-        <td class="value">{{ $money($order->shipping_total) }}</td>
+        <td class="label">Subtotal</td>
+        <td class="value">{{ $money($order->subtotal) }}</td>
     </tr>
     <tr>
-        <td class="label">Tax</td>
-        <td class="value">{{ $money($order->tax_total) }}</td>
+        <td class="label">Shipping</td>
+        <td class="value">
+            @if ((float) $order->shipping_total > 0)
+                {{ $money($order->shipping_total) }}
+            @else
+                Free
+            @endif
+        </td>
     </tr>
+    @if ((float) $order->tax_total > 0.009)
+        <tr>
+            <td class="label">Tax</td>
+            <td class="value">{{ $money($order->tax_total) }}</td>
+        </tr>
+    @endif
+    @if ((float) $order->discount_total > 0.009)
+        <tr class="savings">
+            <td class="label">Other discount</td>
+            <td class="value">{{ $moneyDeduction($order->discount_total) }}</td>
+        </tr>
+    @endif
     <tr class="grand">
         <td class="label"><strong>Total</strong></td>
         <td class="value"><strong>{{ $money($order->grand_total) }}</strong></td>

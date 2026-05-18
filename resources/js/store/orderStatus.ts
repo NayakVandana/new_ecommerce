@@ -40,6 +40,32 @@ export function formatMoney(amount: string | number, currency: string): string {
     }
 }
 
+/** Discount / deduction lines: currency symbol first, then minus (e.g. ₹ -1,000.00). */
+export function formatMoneyDeduction(amount: string | number, currency: string): string {
+    const n = Math.abs(typeof amount === 'string' ? Number.parseFloat(amount) : amount);
+
+    if (Number.isNaN(n)) {
+        return `-${amount}`;
+    }
+
+    const code = currency || 'INR';
+
+    try {
+        const amountPart = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(n);
+
+        if (code === 'INR') {
+            return `₹ -${amountPart}`;
+        }
+
+        return `-${formatMoney(n, code)}`;
+    } catch {
+        return `-${n.toFixed(2)} ${code}`;
+    }
+}
+
 export function formatOrderDate(value: string | null): string {
     if (!value) {
         return '—';

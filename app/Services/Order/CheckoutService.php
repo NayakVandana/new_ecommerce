@@ -12,6 +12,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\UserAddress;
 use App\Support\StoreDelivery;
+use App\Support\VariantPricing;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -110,6 +111,8 @@ class CheckoutService
                     'variant_label' => $line['variant_label'],
                     'sku' => $line['sku'],
                     'unit_price' => $line['unit_price'],
+                    'compare_at_price' => $line['compare_at_price'] ?? null,
+                    'discount_percent' => $line['discount_percent'] ?? 0,
                     'quantity' => $line['quantity'],
                     'line_total' => $lineSubtotal,
                 ]);
@@ -226,7 +229,16 @@ class CheckoutService
                 throw new RuntimeException("Insufficient stock for {$product->name}.");
             }
 
-            $unitPrice = (float) $variant->price;
+            $presentation = VariantPricing::presentation(
+                $variant->cost !== null ? (float) $variant->cost : null,
+                $variant->compare_at_price !== null ? (float) $variant->compare_at_price : null,
+                $variant->list_price !== null ? (float) $variant->list_price : null,
+                (float) $variant->price,
+                $variant->discount_percent !== null ? (float) $variant->discount_percent : null,
+                $variant->commission_percent !== null ? (float) $variant->commission_percent : null,
+            );
+
+            $unitPrice = $presentation['final_price'];
             $lineTotal = round($unitPrice * $item->quantity, 2);
 
             $lines[] = [
@@ -235,6 +247,8 @@ class CheckoutService
                 'variant_label' => trim(collect([$variant->size, $variant->color])->filter()->implode(' · ')) ?: $variant->sku,
                 'sku' => $variant->sku,
                 'unit_price' => $unitPrice,
+                'compare_at_price' => $presentation['mrp'],
+                'discount_percent' => $presentation['discount_percent'],
                 'quantity' => $item->quantity,
                 'line_total' => $lineTotal,
             ];

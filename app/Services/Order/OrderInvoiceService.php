@@ -12,6 +12,7 @@ class OrderInvoiceService
             ->with([
                 'user:id,name,email,phone',
                 'items' => fn ($q) => $q->orderBy('id'),
+                'items.productVariant',
                 'payments' => fn ($q) => $q->orderBy('id'),
             ])
             ->find($id);

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Cart\CartOwnerService;
 use App\Services\Order\CheckoutService;
+use App\Support\OrderPresentation;
 use App\Support\StoreDelivery;
 use Exception;
 use Illuminate\Http\Request;
@@ -226,7 +227,12 @@ class OrderController extends Controller
                 return $this->sendJsonResponse(false, 'Order not found.', null, 200);
             }
 
-            return $this->sendJsonResponse(true, 'Order fetched successfully.', $order, 200);
+            return $this->sendJsonResponse(
+                true,
+                'Order fetched successfully.',
+                OrderPresentation::formatForUser($order),
+                200,
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }

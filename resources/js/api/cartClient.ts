@@ -10,6 +10,8 @@ export type CartApiEnvelope<T> = UserApiEnvelope<T>;
 export type CartPayload = {
     items: CartLineItem[];
     subtotal: number;
+    mrp_subtotal: number;
+    discount_total: number;
     count: number;
     currency: string;
 };
@@ -18,7 +20,12 @@ export type CartLineItem = {
     id: number;
     quantity: number;
     unit_price: number;
+    compare_at_price: number | null;
+    list_price: number;
+    discount_percent: number;
     line_total: number;
+    line_mrp_total: number;
+    line_discount: number;
     product_variant_id: number;
     product_id: number;
     product_name: string;

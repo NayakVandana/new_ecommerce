@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
+use App\Support\OrderPresentation;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -115,7 +116,12 @@ class OrderApiController extends Controller
                 return $this->sendJsonResponse(false, 'Order not found.', null, 200);
             }
 
-            return $this->sendJsonResponse(true, 'Order fetched successfully.', $order, 200);
+            return $this->sendJsonResponse(
+                true,
+                'Order fetched successfully.',
+                OrderPresentation::formatForAdmin($order),
+                200,
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }
@@ -167,7 +173,12 @@ class OrderApiController extends Controller
                 ]);
             });
 
-            return $this->sendJsonResponse(true, 'Order status updated.', $order, 200);
+            return $this->sendJsonResponse(
+                true,
+                'Order status updated.',
+                OrderPresentation::formatForAdmin($order),
+                200,
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }

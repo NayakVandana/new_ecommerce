@@ -7,6 +7,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Services\Cart\CartOwnerService;
+use App\Support\VariantPricing;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -162,7 +163,14 @@ class CartController extends Controller
     }
 
     /**
-     * @return array{items: array<int, array<string, mixed>>, subtotal: float, count: int, currency: string}
+     * @return array{
+     *     items: array<int, array<string, mixed>>,
+     *     subtotal: float,
+     *     mrp_subtotal: float,
+     *     discount_total: float,
+     *     count: int,
+     *     currency: string
+     * }
      */
     protected function formatCart(Cart $cart): array
     {
@@ -186,6 +194,8 @@ class CartController extends Controller
 
         $rows = [];
         $subtotal = 0.0;
+        $mrpSubtotal = 0.0;
+        $discountTotal = 0.0;
         $count = 0;
 
         foreach ($items as $item) {
@@ -196,9 +206,24 @@ class CartController extends Controller
                 continue;
             }
 
-            $unitPrice = (float) $variant->price;
-            $lineTotal = $unitPrice * $item->quantity;
+            $presentation = VariantPricing::presentation(
+                $variant->cost !== null ? (float) $variant->cost : null,
+                $variant->compare_at_price !== null ? (float) $variant->compare_at_price : null,
+                $variant->list_price !== null ? (float) $variant->list_price : null,
+                (float) $variant->price,
+                $variant->discount_percent !== null ? (float) $variant->discount_percent : null,
+                $variant->commission_percent !== null ? (float) $variant->commission_percent : null,
+            );
+
+            $unitPrice = $presentation['final_price'];
+            $unitMrp = $presentation['mrp'] ?? $unitPrice;
+            $lineTotal = round($unitPrice * $item->quantity, 2);
+            $lineMrpTotal = round($unitMrp * $item->quantity, 2);
+            $lineDiscount = round(max(0, $lineMrpTotal - $lineTotal), 2);
+
             $subtotal += $lineTotal;
+            $mrpSubtotal += $lineMrpTotal;
+            $discountTotal += $lineDiscount;
             $count += $item->quantity;
 
             $image = $variant->images->first() ?? $product->images()->orderByDesc('is_primary')->first();
@@ -207,7 +232,12 @@ class CartController extends Controller
                 'id' => $item->id,
                 'quantity' => $item->quantity,
                 'unit_price' => $unitPrice,
+                'compare_at_price' => $presentation['mrp'],
+                'list_price' => $presentation['list_price'],
+                'discount_percent' => $presentation['discount_percent'],
                 'line_total' => $lineTotal,
+                'line_mrp_total' => $lineMrpTotal,
+                'line_discount' => $lineDiscount,
                 'product_variant_id' => $variant->id,
                 'product_id' => $product->id,
                 'product_name' => $product->name,
@@ -221,6 +251,8 @@ class CartController extends Controller
         return [
             'items' => $rows,
             'subtotal' => round($subtotal, 2),
+            'mrp_subtotal' => round($mrpSubtotal, 2),
+            'discount_total' => round($discountTotal, 2),
             'count' => $count,
             'currency' => $cart->currency,
         ];

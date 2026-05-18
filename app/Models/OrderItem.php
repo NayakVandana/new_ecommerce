@@ -15,6 +15,8 @@ class OrderItem extends Model
         'variant_label',
         'sku',
         'unit_price',
+        'compare_at_price',
+        'discount_percent',
         'quantity',
         'line_total',
     ];
@@ -23,6 +25,8 @@ class OrderItem extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'compare_at_price' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
             'line_total' => 'decimal:2',
             'quantity' => 'integer',
         ];
