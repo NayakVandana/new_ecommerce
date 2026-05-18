@@ -74,6 +74,13 @@ export default function Index() {
     }, [keyword, statusFilter]);
 
     useEffect(() => {
+        const fromUrl = new URLSearchParams(window.location.search).get('status');
+        if (fromUrl) {
+            setStatusFilter(fromUrl);
+        }
+    }, []);
+
+    useEffect(() => {
         adminApiPost<AdminApiEnvelope<{ statuses: StatusOption[] }>>(
             '/orders/orders-meta',
             {},

@@ -11,9 +11,11 @@ export type PricingLineItem = {
 export default function CartLinePricing({
     item,
     currency,
+    showSku = true,
 }: {
     item: PricingLineItem;
     currency: string;
+    showSku?: boolean;
 }) {
     const mrp = item.compare_at_price;
     const hasDiscount =
@@ -44,7 +46,9 @@ export default function CartLinePricing({
                     You save {formatMoney(item.line_discount, currency)} on this line
                 </p>
             ) : null}
-            <p className="text-xs text-stone-500">SKU {item.sku}</p>
+            {showSku ? (
+                <p className="text-xs text-stone-500">SKU {item.sku}</p>
+            ) : null}
         </div>
     );
 }

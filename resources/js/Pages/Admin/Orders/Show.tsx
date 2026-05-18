@@ -455,6 +455,7 @@ export default function Show() {
                                                                 <CartLinePricing
                                                                     item={item}
                                                                     currency={currency}
+                                                                    showSku={false}
                                                                 />
                                                             </div>
                                                         </td>
@@ -464,6 +465,7 @@ export default function Show() {
                                                             <CartLinePricing
                                                                 item={item}
                                                                 currency={currency}
+                                                                showSku={false}
                                                             />
                                                         </td>
                                                         <td

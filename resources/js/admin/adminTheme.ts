@@ -174,6 +174,66 @@ export const adminToolbarHelpText =
 export const adminStatCard =
     'rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900';
 
+export const adminDashboardHero =
+    'rounded-xl border border-violet-200/80 bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-800 px-4 py-4 text-white shadow-md sm:px-5 sm:py-4 dark:border-violet-500/30 dark:from-violet-700 dark:via-violet-800 dark:to-indigo-950';
+
+export const adminDashboardHeroBtn =
+    'inline-flex min-h-9 items-center justify-center rounded-lg px-3.5 py-2 text-sm font-medium transition';
+
+export const adminDashboardHeroBtnPrimary =
+    `${adminDashboardHeroBtn} bg-white text-violet-800 shadow-sm hover:bg-violet-50`;
+
+export const adminDashboardHeroBtnGhost =
+    `${adminDashboardHeroBtn} border border-white/35 text-white hover:bg-white/10`;
+
+export const adminDashboardStatLink =
+    'group block rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-violet-600';
+
+export const adminDashboardSectionCard =
+    'flex flex-col rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-violet-600';
+
+export const adminDashboardQuickBtn =
+    'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-violet-500 dark:hover:bg-violet-950/40';
+
+export const adminDashboardTwoCol =
+    'grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-6';
+
+export const adminDashboardPanel =
+    'flex h-full min-h-0 flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-700 dark:bg-slate-900';
+
+export const adminDashboardMetricList =
+    'mt-3 divide-y divide-slate-100 dark:divide-slate-800';
+
+export const adminDashboardMetricRow =
+    'flex items-center justify-between gap-3 py-2.5 sm:gap-4 sm:py-3';
+
+export const adminDashboardMetricRowToday =
+    'flex items-center justify-between gap-3 rounded-lg bg-violet-50 px-2 py-2.5 ring-1 ring-inset ring-violet-200/80 sm:gap-4 sm:px-3 sm:py-3 dark:bg-violet-950/40 dark:ring-violet-700/50';
+
+export const adminDashboardStatLinkToday =
+    'group block rounded-xl border border-violet-300/90 bg-violet-50/90 p-4 shadow-sm ring-2 ring-violet-200/60 transition hover:border-violet-400 hover:shadow-md dark:border-violet-600 dark:bg-violet-950/50 dark:ring-violet-800/60 dark:hover:border-violet-500';
+
+export const adminDashboardKpiGrid =
+    'grid grid-cols-1 gap-3 sm:grid-cols-3';
+
+export const adminDashboardKpiMetrics =
+    'mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 dark:border-slate-800';
+
+export const adminDashboardMetricCountValueToday =
+    'text-sm font-bold tabular-nums text-violet-700 dark:text-violet-300';
+
+export const adminDashboardMetricCounts =
+    'flex shrink-0 items-stretch gap-3 sm:gap-5';
+
+export const adminDashboardMetricCountCell =
+    'min-w-[3.25rem] text-right sm:min-w-[3.5rem]';
+
+export const adminDashboardMetricCountLabel =
+    'text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500';
+
+export const adminDashboardMetricCountValue =
+    'text-sm font-semibold tabular-nums text-slate-900 dark:text-white';
+
 export const adminBadgeYes =
     'inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300';
 
