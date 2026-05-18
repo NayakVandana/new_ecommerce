@@ -1,4 +1,5 @@
 import { cartStore, type CartPayload } from '@/api/cartClient';
+import { clearPersistedCheckoutCoupon } from '@/store/persistedCoupon';
 import {
     isUserApiUnauthorized,
     type UserApiEnvelope,
@@ -45,6 +46,18 @@ export type CheckoutResult = PlacedOrderSummary & {
     orders: PlacedOrderSummary[];
 };
 
+export type AppliedCoupon = {
+    code: string;
+    type: string;
+    coupon_discount: number;
+    subtotal: number;
+    taxable_subtotal: number;
+    shipping_flat: number;
+    tax: number;
+    grand_total: number;
+    currency: string;
+};
+
 async function orderPost<T>(path: string, data: Record<string, unknown> = {}): Promise<T> {
     try {
         return await userApiPost<T>(path, data);
@@ -62,16 +75,22 @@ export const orderStore = {
         return orderPost<UserApiEnvelope<CheckoutOptions>>('/checkout/checkout-options', {});
     },
 
+    async applyCoupon(code: string): Promise<UserApiEnvelope<AppliedCoupon>> {
+        return orderPost<UserApiEnvelope<AppliedCoupon>>('/checkout/coupon-apply', { code });
+    },
+
     async placeOrder(payload: {
         payment_method: 'cod';
         shipping_address: ShippingAddressInput;
         customer_note?: string;
         save_address?: boolean;
+        coupon_code?: string;
     }): Promise<UserApiEnvelope<CheckoutResult>> {
         const res = await orderPost<UserApiEnvelope<CheckoutResult>>('/checkout/checkout-place', {
             ...payload,
         });
         if (res.success) {
+            clearPersistedCheckoutCoupon();
             window.dispatchEvent(new Event('cartUpdated'));
         }
 
@@ -91,10 +110,19 @@ export const orderStore = {
 export function estimateCheckoutTotals(
     subtotal: number,
     options: Pick<CheckoutOptions, 'shipping_flat' | 'tax_rate'>,
-): { shipping: number; tax: number; grandTotal: number } {
+    couponDiscount = 0,
+): {
+    shipping: number;
+    tax: number;
+    grandTotal: number;
+    couponDiscount: number;
+    taxableSubtotal: number;
+} {
+    const discount = Math.min(Math.max(0, couponDiscount), subtotal);
+    const taxableSubtotal = Math.round((subtotal - discount) * 100) / 100;
     const shipping = options.shipping_flat;
-    const tax = Math.round(subtotal * options.tax_rate * 100) / 100;
-    const grandTotal = Math.round((subtotal + shipping + tax) * 100) / 100;
+    const tax = Math.round(taxableSubtotal * options.tax_rate * 100) / 100;
+    const grandTotal = Math.round((taxableSubtotal + shipping + tax) * 100) / 100;
 
-    return { shipping, tax, grandTotal };
+    return { shipping, tax, grandTotal, couponDiscount: discount, taxableSubtotal };
 }

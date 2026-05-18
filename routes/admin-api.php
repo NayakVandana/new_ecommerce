@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AdminAuthApiController;
 use App\Http\Controllers\Admin\AdminMediaUploadController;
 use App\Http\Controllers\Admin\BrandApiController;
+use App\Http\Controllers\Admin\CouponApiController;
+use App\Http\Controllers\Admin\CouponUsageApiController;
 use App\Http\Controllers\Admin\CategoryApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
 use App\Http\Controllers\Admin\OrderApiController;
@@ -38,6 +40,13 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/brands/brand-store', [BrandApiController::class, 'postBrandStore']);
     Route::post('/brands/brand-update', [BrandApiController::class, 'postBrandUpdate']);
     Route::post('/brands/brand-destroy', [BrandApiController::class, 'postBrandDestroy']);
+
+    Route::post('/coupons/coupons-list', [CouponApiController::class, 'postCouponsList']);
+    Route::post('/coupons/coupon-show', [CouponApiController::class, 'postCouponShow']);
+    Route::post('/coupons/coupon-store', [CouponApiController::class, 'postCouponStore']);
+    Route::post('/coupons/coupon-update', [CouponApiController::class, 'postCouponUpdate']);
+    Route::post('/coupons/coupon-destroy', [CouponApiController::class, 'postCouponDestroy']);
+    Route::post('/coupons/coupon-usages-list', [CouponUsageApiController::class, 'postCouponUsagesList']);
 
     Route::post('/categories/categories-list', [CategoryApiController::class, 'postCategoriesList']);
     Route::post('/categories/category-show', [CategoryApiController::class, 'postCategoryShow']);

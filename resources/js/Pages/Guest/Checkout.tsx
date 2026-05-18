@@ -1,13 +1,22 @@
 import { cartImageSrc, type CartPayload } from '@/api/cartClient';
 import CheckoutStepper, { type CheckoutStepId } from '@/Components/store/CheckoutStepper';
+import CouponPromoInput from '@/Components/store/CouponPromoInput';
 import {
     estimateCheckoutTotals,
     orderStore,
+    type AppliedCoupon,
     type CheckoutOptions,
     type DeliveryCityOption,
     type ShippingAddressInput,
 } from '@/api/orderClient';
-import { formatMoney } from '@/store/orderStatus';
+import { couponDiscountLabel } from '@/store/pricingLabels';
+import {
+    cartCouponTotalsKey,
+    clearPersistedCheckoutCoupon,
+    persistCheckoutCoupon,
+} from '@/store/persistedCoupon';
+import { refreshCouponForCart } from '@/store/syncCartCoupon';
+import { formatMoney, formatMoneyDeduction } from '@/store/orderStatus';
 import {
     storeBtnPrimary,
     storeBtnSecondary,
@@ -76,11 +85,20 @@ function OrderSummaryPanel({
     cart,
     currency,
     totals,
+    appliedCoupon,
+    onCouponApplied,
     compact = false,
 }: {
     cart: CartPayload;
     currency: string;
-    totals: { shipping: number; tax: number; grandTotal: number } | null;
+    totals: {
+        shipping: number;
+        tax: number;
+        grandTotal: number;
+        couponDiscount: number;
+    } | null;
+    appliedCoupon: AppliedCoupon | null;
+    onCouponApplied: (coupon: AppliedCoupon | null) => void;
     compact?: boolean;
 }) {
     return (
@@ -122,6 +140,14 @@ function OrderSummaryPanel({
                     );
                 })}
             </ul>
+            <div className="mt-4 border-t border-stone-200 pt-4 dark:border-stone-800">
+                <CouponPromoInput
+                    currency={currency}
+                    applied={appliedCoupon}
+                    onApplied={onCouponApplied}
+                    compact={compact}
+                />
+            </div>
             <dl className="mt-4 space-y-2 border-t border-stone-200 pt-4 text-sm dark:border-stone-800">
                 <div className="flex justify-between">
                     <dt className="text-stone-500">Subtotal ({cart.count} items)</dt>
@@ -129,6 +155,16 @@ function OrderSummaryPanel({
                         {formatMoney(cart.subtotal, currency)}
                     </dd>
                 </div>
+                {totals && totals.couponDiscount > 0.009 ? (
+                    <div className="flex justify-between">
+                        <dt className="text-stone-500">
+                            {couponDiscountLabel(appliedCoupon?.code)}
+                        </dt>
+                        <dd className="font-medium text-emerald-700 dark:text-emerald-400">
+                            {formatMoneyDeduction(totals.couponDiscount, currency)}
+                        </dd>
+                    </div>
+                ) : null}
                 <div className="flex justify-between">
                     <dt className="text-stone-500">Shipping</dt>
                     <dd className="text-stone-700 dark:text-stone-300">
@@ -169,6 +205,16 @@ export default function Checkout() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+
+    const handleCouponApplied = (coupon: AppliedCoupon | null) => {
+        setAppliedCoupon(coupon);
+        if (coupon) {
+            persistCheckoutCoupon(coupon.code);
+        } else {
+            clearPersistedCheckoutCoupon();
+        }
+    };
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -202,13 +248,44 @@ export default function Checkout() {
             .finally(() => setLoading(false));
     }, [user, authLoading]);
 
+    const cartCouponKey = cart ? cartCouponTotalsKey(cart) : '';
+
+    useEffect(() => {
+        if (!cart) {
+            return;
+        }
+
+        if (cart.items.length === 0) {
+            setAppliedCoupon(null);
+            clearPersistedCheckoutCoupon();
+
+            return;
+        }
+
+        let cancelled = false;
+
+        void refreshCouponForCart(cart, { current: appliedCoupon }).then((next) => {
+            if (!cancelled) {
+                setAppliedCoupon(next);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [cartCouponKey]);
+
     const totals = useMemo(() => {
         if (!cart || !options) {
             return null;
         }
 
-        return estimateCheckoutTotals(cart.subtotal, options);
-    }, [cart, options]);
+        return estimateCheckoutTotals(
+            cart.subtotal,
+            options,
+            appliedCoupon?.coupon_discount ?? 0,
+        );
+    }, [cart, options, appliedCoupon]);
 
     const deliveryCities: DeliveryCityOption[] =
         options?.delivery_cities?.length ? options.delivery_cities : [
@@ -319,6 +396,7 @@ export default function Checkout() {
                 shipping_address: addressPayload,
                 customer_note: customerNote || undefined,
                 save_address: saveAddress,
+                coupon_code: appliedCoupon?.code,
             });
 
             if (!res.success || !res.data) {
@@ -514,12 +592,25 @@ export default function Checkout() {
                     </div>
 
                     <aside className={`${storeCard} hidden h-fit lg:sticky lg:top-36 lg:block`}>
-                        <OrderSummaryPanel cart={cart} currency={currency} totals={totals} />
+                        <OrderSummaryPanel
+                            cart={cart}
+                            currency={currency}
+                            totals={totals}
+                            appliedCoupon={appliedCoupon}
+                            onCouponApplied={handleCouponApplied}
+                        />
                     </aside>
                 </form>
 
                 <aside className={`${storeCard} mt-6 lg:hidden`}>
-                    <OrderSummaryPanel cart={cart} currency={currency} totals={totals} compact />
+                    <OrderSummaryPanel
+                        cart={cart}
+                        currency={currency}
+                        totals={totals}
+                        appliedCoupon={appliedCoupon}
+                        onCouponApplied={handleCouponApplied}
+                        compact
+                    />
                 </aside>
             </div>
         </GuestPanelLayout>

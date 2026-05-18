@@ -54,6 +54,7 @@ class OrderController extends Controller
                 'shipping_address' => $request->validatedShippingAddress(),
                 'customer_note' => $request->input('customer_note'),
                 'save_address' => $request->boolean('save_address'),
+                'coupon_code' => $request->input('coupon_code'),
             ]);
 
             $orders = $result['orders'];

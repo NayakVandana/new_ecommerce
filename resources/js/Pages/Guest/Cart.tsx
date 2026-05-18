@@ -4,9 +4,21 @@ import {
     type CartLineItem,
     type CartPayload,
 } from '@/api/cartClient';
-import { estimateCheckoutTotals, orderStore, type CheckoutOptions } from '@/api/orderClient';
+import CouponPromoInput from '@/Components/store/CouponPromoInput';
+import {
+    estimateCheckoutTotals,
+    orderStore,
+    type AppliedCoupon,
+    type CheckoutOptions,
+} from '@/api/orderClient';
 import CartLinePricing from '@/Components/store/CartLinePricing';
 import CartOrderSummary from '@/Components/store/CartOrderSummary';
+import {
+    cartCouponTotalsKey,
+    clearPersistedCheckoutCoupon,
+    persistCheckoutCoupon,
+} from '@/store/persistedCoupon';
+import { refreshCouponForCart } from '@/store/syncCartCoupon';
 import { formatMoney } from '@/store/orderStatus';
 import {
     storeBtnPrimary,
@@ -31,6 +43,16 @@ export default function Cart() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [busyId, setBusyId] = useState<number | null>(null);
+    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+
+    const handleCouponApplied = (coupon: AppliedCoupon | null) => {
+        setAppliedCoupon(coupon);
+        if (coupon) {
+            persistCheckoutCoupon(coupon.code);
+        } else {
+            clearPersistedCheckoutCoupon();
+        }
+    };
 
     const load = useCallback(() => {
         setLoading(true);
@@ -65,6 +87,33 @@ export default function Cart() {
         return () => window.removeEventListener('cartUpdated', load);
     }, [load, user, authLoading]);
 
+    const cartCouponKey = cart ? cartCouponTotalsKey(cart) : '';
+
+    useEffect(() => {
+        if (!cart) {
+            return;
+        }
+
+        if (cart.items.length === 0) {
+            setAppliedCoupon(null);
+            clearPersistedCheckoutCoupon();
+
+            return;
+        }
+
+        let cancelled = false;
+
+        void refreshCouponForCart(cart, { current: appliedCoupon }).then((next) => {
+            if (!cancelled) {
+                setAppliedCoupon(next);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [cartCouponKey]);
+
     const currency = cart?.currency ?? checkoutOptions?.currency ?? 'INR';
 
     const checkoutTotals = useMemo(() => {
@@ -72,8 +121,12 @@ export default function Cart() {
             return null;
         }
 
-        return estimateCheckoutTotals(cart.subtotal, checkoutOptions);
-    }, [cart, checkoutOptions]);
+        return estimateCheckoutTotals(
+            cart.subtotal,
+            checkoutOptions,
+            appliedCoupon?.coupon_discount ?? 0,
+        );
+    }, [cart, checkoutOptions, appliedCoupon]);
 
     const updateQty = async (item: CartLineItem, quantity: number) => {
         if (quantity < 1) {
@@ -119,6 +172,8 @@ export default function Cart() {
             const res = await cartStore.clear();
             if (res.success && res.data) {
                 setCart(res.data);
+                setAppliedCoupon(null);
+                clearPersistedCheckoutCoupon();
             }
         } finally {
             setLoading(false);
@@ -228,10 +283,19 @@ export default function Cart() {
 
                     {cart ? (
                         <aside className={`${storeCard} h-fit lg:sticky lg:top-24`}>
+                            <div className="mb-4 border-b border-stone-200 pb-4 dark:border-stone-800">
+                                <CouponPromoInput
+                                    currency={currency}
+                                    applied={appliedCoupon}
+                                    onApplied={handleCouponApplied}
+                                />
+                            </div>
                             <CartOrderSummary
                                 cart={cart}
                                 currency={currency}
                                 checkoutTotals={checkoutTotals}
+                                couponDiscount={appliedCoupon?.coupon_discount ?? 0}
+                                couponCode={appliedCoupon?.code}
                             />
                             <div className="mt-6 flex flex-col gap-3">
                                 <Link

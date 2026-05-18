@@ -50,6 +50,7 @@ class OrderPresentation
     public static function formatForUser(Order $order): array
     {
         $order->loadMissing([
+            'coupon:id,code',
             'statusHistories' => fn ($q) => $q->orderBy('created_at'),
             'payments' => fn ($q) => $q->orderBy('id'),
         ]);
@@ -57,6 +58,7 @@ class OrderPresentation
         $summary = self::summarize($order);
         $payload = $order->toArray();
         $payload = array_merge($payload, $summary);
+        $payload['coupon_code'] = $order->coupon?->code;
         $payload['placed_at'] = $order->placed_at?->toIso8601String();
         $payload['created_at'] = $order->created_at?->toIso8601String();
 
@@ -69,6 +71,7 @@ class OrderPresentation
     public static function formatForAdmin(Order $order): array
     {
         $order->loadMissing([
+            'coupon:id,code',
             'user:id,name,email,phone',
             'statusHistories' => fn ($q) => $q->orderByDesc('created_at'),
             'statusHistories.creator:id,name',
@@ -78,6 +81,7 @@ class OrderPresentation
         $summary = self::summarize($order);
         $payload = $order->toArray();
         $payload = array_merge($payload, $summary);
+        $payload['coupon_code'] = $order->coupon?->code;
         $payload['placed_at'] = $order->placed_at?->toIso8601String();
         $payload['created_at'] = $order->created_at?->toIso8601String();
 
@@ -140,5 +144,12 @@ class OrderPresentation
         $mrp = $presentation['mrp'];
 
         return $mrp !== null && $mrp > $unitPrice + 0.009 ? $mrp : null;
+    }
+
+    public static function couponDiscountLabel(?string $code): string
+    {
+        $normalized = $code !== null ? strtoupper(trim($code)) : '';
+
+        return $normalized !== '' ? "Coupon ({$normalized})" : 'Coupon discount';
     }
 }

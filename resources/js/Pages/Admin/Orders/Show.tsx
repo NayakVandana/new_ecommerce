@@ -23,6 +23,7 @@ import OrderStatusTimeline from '@/Components/store/OrderStatusTimeline';
 import PricingSummary from '@/Components/store/PricingSummary';
 import AdminLayout from '@/Layouts/AdminLayout';
 import type { PageProps as AppPageProps } from '@/types';
+import { couponDiscountLabel } from '@/store/pricingLabels';
 import {
     formatMoney,
     formatOrderDate,
@@ -86,6 +87,7 @@ type OrderDetail = {
     tax_total: string | number;
     shipping_total: string | number;
     discount_total: string | number;
+    coupon_code?: string | null;
     grand_total: string | number;
     mrp_subtotal: number;
     product_discount_total: number;
@@ -562,6 +564,9 @@ export default function Show() {
                                         shippingTotal={num(order.shipping_total)}
                                         taxTotal={num(order.tax_total)}
                                         discountTotal={num(order.discount_total)}
+                                        orderDiscountLabel={couponDiscountLabel(
+                                            order.coupon_code,
+                                        )}
                                         grandTotal={num(order.grand_total)}
                                         title="Payment summary"
                                         footerNote="Cash on delivery."

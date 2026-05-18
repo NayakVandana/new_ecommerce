@@ -11,6 +11,7 @@ class OrderInvoiceService
         return Order::query()
             ->with([
                 'user:id,name,email,phone',
+                'coupon:id,code',
                 'items' => fn ($q) => $q->orderBy('id'),
                 'items.productVariant',
                 'payments' => fn ($q) => $q->orderBy('id'),

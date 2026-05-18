@@ -65,12 +65,23 @@ Route::prefix('account')->name('user.')->group(function () {
     Route::get('/orders/{id}', fn (int $id) => Inertia::render('User/Orders/Show', ['orderId' => $id]))
         ->whereNumber('id')
         ->name('orders.show');
+    Route::get('/coupon-history', fn () => Inertia::render('User/CouponHistory/Index'))
+        ->name('coupon-history.index');
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', fn () => Inertia::render('Admin/Login'))->name('login');
 
     Route::get('/', fn () => Inertia::render('Admin/Dashboard'))->name('dashboard');
+
+    Route::get('coupons', fn () => Inertia::render('Admin/Coupons/Index'))->name('coupons.index');
+    Route::get('coupons/create', fn () => Inertia::render('Admin/Coupons/Form', ['couponId' => null]))
+        ->name('coupons.create');
+    Route::get('coupons/{id}/edit', fn (int $id) => Inertia::render('Admin/Coupons/Form', ['couponId' => $id]))
+        ->whereNumber('id')
+        ->name('coupons.edit');
+    Route::get('coupon-usages', fn () => Inertia::render('Admin/CouponUsages/Index'))
+        ->name('coupon-usages.index');
 
     Route::get('brands', fn () => Inertia::render('Admin/Brands/Index'))->name('brands.index');
     Route::get('brands/create', fn () => Inertia::render('Admin/Brands/Form', ['brandId' => null]))

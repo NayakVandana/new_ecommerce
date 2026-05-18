@@ -12,6 +12,7 @@ import {
     storeTableTh,
     storeTableWrap,
 } from '@/store/storeTheme';
+import { couponDiscountLabel } from '@/store/pricingLabels';
 import {
     formatMoney,
     formatOrderDate,
@@ -55,6 +56,7 @@ type OrderDetail = {
     tax_total: number;
     shipping_total: number;
     discount_total: number;
+    coupon_code?: string | null;
     grand_total: number;
     mrp_subtotal: number;
     product_discount_total: number;
@@ -255,6 +257,7 @@ export default function Show() {
                                 shippingTotal={num(order.shipping_total)}
                                 taxTotal={num(order.tax_total)}
                                 discountTotal={num(order.discount_total)}
+                                orderDiscountLabel={couponDiscountLabel(order.coupon_code)}
                                 grandTotal={num(order.grand_total)}
                                 title="Payment summary"
                                 footerNote="Cash on delivery."

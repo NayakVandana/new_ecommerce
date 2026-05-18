@@ -247,7 +247,7 @@
     @endif
     @if ((float) $order->discount_total > 0.009)
         <tr class="savings">
-            <td class="label">Other discount</td>
+            <td class="label">{{ \App\Support\OrderPresentation::couponDiscountLabel($order->coupon?->code) }}</td>
             <td class="value">{{ $moneyDeduction($order->discount_total) }}</td>
         </tr>
     @endif

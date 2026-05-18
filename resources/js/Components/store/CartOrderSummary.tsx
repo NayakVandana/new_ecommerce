@@ -1,5 +1,6 @@
 import type { CartPayload } from '@/api/cartClient';
 import PricingSummary from '@/Components/store/PricingSummary';
+import { couponDiscountLabel } from '@/store/pricingLabels';
 
 export type CartCheckoutTotals = {
     shipping: number;
@@ -11,9 +12,17 @@ type Props = {
     cart: CartPayload;
     currency: string;
     checkoutTotals?: CartCheckoutTotals | null;
+    couponDiscount?: number;
+    couponCode?: string | null;
 };
 
-export default function CartOrderSummary({ cart, currency, checkoutTotals }: Props) {
+export default function CartOrderSummary({
+    cart,
+    currency,
+    checkoutTotals,
+    couponDiscount = 0,
+    couponCode = null,
+}: Props) {
     const shipping = checkoutTotals?.shipping ?? 0;
     const tax = checkoutTotals?.tax ?? 0;
     const grandTotal = checkoutTotals?.grandTotal ?? cart.subtotal;
@@ -27,7 +36,8 @@ export default function CartOrderSummary({ cart, currency, checkoutTotals }: Pro
             subtotal={cart.subtotal}
             shippingTotal={shipping}
             taxTotal={tax}
-            discountTotal={0}
+            discountTotal={couponDiscount}
+            orderDiscountLabel={couponDiscountLabel(couponCode)}
             grandTotal={grandTotal}
             title="Order summary"
             footerNote="Cash on delivery. Shipping and tax match checkout; final total is confirmed when you place your order."

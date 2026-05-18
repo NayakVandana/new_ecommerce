@@ -1,3 +1,4 @@
+import { couponDiscountLabel } from '@/store/pricingLabels';
 import { formatMoney, formatMoneyDeduction } from '@/store/orderStatus';
 
 function SummaryRow({
@@ -40,6 +41,8 @@ export type PricingSummaryProps = {
     shippingTotal: number;
     taxTotal: number;
     discountTotal: number;
+    /** e.g. "Coupon (SUMMER20)" — defaults to "Coupon discount" when omitted. */
+    orderDiscountLabel?: string;
     grandTotal: number;
     title?: string;
     footerNote?: string | null;
@@ -54,10 +57,12 @@ export default function PricingSummary({
     shippingTotal,
     taxTotal,
     discountTotal,
+    orderDiscountLabel,
     grandTotal,
     title = 'Order summary',
     footerNote = null,
 }: PricingSummaryProps) {
+    const promoLabel = orderDiscountLabel ?? couponDiscountLabel();
     const hasProductDiscount = productDiscountTotal > 0.009;
     const hasOrderDiscount = Number(discountTotal) > 0.009;
 
@@ -86,7 +91,7 @@ export default function PricingSummary({
                 ) : null}
                 {hasOrderDiscount ? (
                     <SummaryRow
-                        label="Other discount"
+                        label={promoLabel}
                         value={formatMoneyDeduction(discountTotal, currency)}
                         savings
                     />

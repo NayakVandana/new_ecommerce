@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\User\AuthController;
 use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\CouponController;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\RecentlyViewedController;
@@ -15,6 +16,8 @@ Route::middleware(['auth:sanctum'])->prefix('v1/user')->group(function () {
     Route::post('/profile/profile-appearance', [ProfileController::class, 'postAppearanceUpdate']);
 
     Route::post('/checkout/checkout-options', [OrderController::class, 'postCheckoutOptions']);
+    Route::post('/checkout/coupon-apply', [CouponController::class, 'postCouponApply']);
+    Route::post('/coupons/coupon-usages-list', [CouponController::class, 'postCouponUsagesList']);
     Route::post('/checkout/checkout-place', [OrderController::class, 'postCheckout']);
     Route::post('/orders/orders-list', [OrderController::class, 'postOrdersList']);
     Route::post('/orders/order-show', [OrderController::class, 'postOrderShow']);

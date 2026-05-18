@@ -25,6 +25,7 @@ class CheckoutPlaceRequest extends FormRequest
             'payment_method' => ['required', 'string', 'in:cod'],
             'customer_note' => ['nullable', 'string', 'max:1000'],
             'save_address' => ['nullable', 'boolean'],
+            'coupon_code' => ['nullable', 'string', 'max:64'],
             'shipping_address' => ['required', 'array'],
             'shipping_address.full_name' => ['required', 'string', 'min:2', 'max:255'],
             'shipping_address.phone' => ['required', 'string', 'max:32'],

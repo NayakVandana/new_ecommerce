@@ -1,3 +1,4 @@
+import { clearPersistedCheckoutCoupon } from '@/store/persistedCoupon';
 import {
     isUserApiUnauthorized,
     type UserApiEnvelope,
@@ -92,8 +93,11 @@ export const cartStore = {
 
     async clear(): Promise<CartApiEnvelope<CartPayload>> {
         const res = await cartPost<CartApiEnvelope<CartPayload>>('/cart/cart-clear', {});
-        if (res.success && res.data) {
-            window.dispatchEvent(new Event('cartUpdated'));
+        if (res.success) {
+            clearPersistedCheckoutCoupon();
+            if (res.data) {
+                window.dispatchEvent(new Event('cartUpdated'));
+            }
         }
 
         return res;

@@ -41,6 +41,11 @@ import { PropsWithChildren, useEffect, useState } from 'react';
 const navLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
     { label: 'Overview', href: route('dashboard'), routeMatch: 'dashboard' },
     { label: 'Orders', href: route('user.orders.index'), routeMatch: ['user.orders.index', 'user.orders.show'] },
+    {
+        label: 'Coupon history',
+        href: route('user.coupon-history.index'),
+        routeMatch: 'user.coupon-history.index',
+    },
     { label: 'Wishlist', href: route('user.wishlist.index'), routeMatch: 'user.wishlist.index' },
     {
         label: 'Recently viewed',

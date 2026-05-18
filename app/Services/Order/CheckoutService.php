@@ -20,6 +20,9 @@ use RuntimeException;
 
 class CheckoutService
 {
+    public function __construct(
+        protected CouponService $coupons,
+    ) {}
     /**
      * One order per cart line (each order has a single product line).
      *
@@ -27,7 +30,8 @@ class CheckoutService
      *     payment_method: string,
      *     shipping_address: array<string, mixed>,
      *     customer_note?: string|null,
-     *     save_address?: bool
+     *     save_address?: bool,
+     *     coupon_code?: string|null
      * }  $input
      * @return array{orders: Collection<int, Order>, primary: Order}
      */
@@ -58,7 +62,21 @@ class CheckoutService
             $cartSubtotal = round(array_sum(array_column($lines, 'line_total')), 2);
             $shippingFlat = round((float) config('checkout.shipping_flat', 0), 2);
             $taxRate = (float) config('checkout.tax_rate', 0);
+
+            $coupon = null;
             $discount = 0.0;
+
+            if (! empty($input['coupon_code'])) {
+                $resolved = $this->coupons->resolveForCheckout(
+                    $user,
+                    (string) $input['coupon_code'],
+                    $cartSubtotal,
+                );
+                $coupon = $resolved['coupon'];
+                $discount = $resolved['discount'];
+            }
+
+            $taxableSubtotal = round(max(0, $cartSubtotal - $discount), 2);
 
             $address = null;
             if (! empty($input['save_address'])) {
@@ -84,13 +102,26 @@ class CheckoutService
             foreach ($lines as $line) {
                 $lineSubtotal = round((float) $line['line_total'], 2);
                 $lineShipping = $shippingShares[$lineIndex] ?? 0.0;
-                $lineTax = round($lineSubtotal * $taxRate, 2);
+                $lineShare = $cartSubtotal > 0 ? $lineSubtotal / $cartSubtotal : 0;
+                $lineTaxable = round($taxableSubtotal * $lineShare, 2);
+                if ($lineIndex === count($lines) - 1) {
+                    $priorTaxable = 0.0;
+                    for ($i = 0; $i < $lineIndex; $i++) {
+                        $share = $cartSubtotal > 0
+                            ? ((float) $lines[$i]['line_total'] / $cartSubtotal)
+                            : 0;
+                        $priorTaxable += round($taxableSubtotal * $share, 2);
+                    }
+                    $lineTaxable = round(max(0, $taxableSubtotal - $priorTaxable), 2);
+                }
+                $lineTax = round($lineTaxable * $taxRate, 2);
                 $lineDiscount = $lineIndex === 0 ? $discount : 0.0;
-                $grandTotal = round($lineSubtotal + $lineShipping + $lineTax - $lineDiscount, 2);
+                $grandTotal = round($lineTaxable + $lineShipping + $lineTax, 2);
 
                 $order = Order::query()->create([
                     'order_number' => $this->generateOrderNumber(),
                     'user_id' => $user->id,
+                    'coupon_id' => $lineIndex === 0 ? $coupon?->id : null,
                     'status' => config('checkout.initial_order_status', 'pending'),
                     'subtotal' => $lineSubtotal,
                     'tax_total' => $lineTax,
@@ -135,6 +166,10 @@ class CheckoutService
                     'note' => 'Order placed — cash on delivery.',
                     'created_by' => $user->id,
                 ]);
+
+                if ($lineIndex === 0 && $coupon !== null && $discount > 0) {
+                    $this->coupons->recordUsage($coupon, $user, $order, $discount);
+                }
 
                 $orders->push($order->fresh(['items']));
                 $lineIndex++;
