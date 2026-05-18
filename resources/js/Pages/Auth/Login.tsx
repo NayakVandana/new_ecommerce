@@ -6,7 +6,7 @@ import PasswordInput from '@/Components/PasswordInput';
 import TextInput from '@/Components/TextInput';
 import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import { setUserApiToken } from '@/auth/authToken';
-import { getPostAuthRedirect, registerUrl } from '@/utils/requireAuth';
+import { forgotPasswordUrl, getPostAuthRedirect, registerUrl } from '@/utils/requireAuth';
 import GuestLayout from '@/Layouts/GuestLayout';
 import type { User } from '@/types';
 import axios from 'axios';
@@ -121,14 +121,14 @@ export default function Login({
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                     <Link
-                        href={route('password.request')}
-                        className="rounded-md text-sm text-gray-600 underline"
+                        href={forgotPasswordUrl(redirect ?? undefined)}
+                        className="text-sm font-medium text-stone-600 underline dark:text-stone-400"
                     >
-                        Forgot password?
+                        Forgot your password?
                     </Link>
-                    <PrimaryButton className="ms-4" disabled={processing}>
+                    <PrimaryButton className="sm:ms-4" disabled={processing}>
                         {processing ? 'Signing in…' : 'Log in'}
                     </PrimaryButton>
                 </div>

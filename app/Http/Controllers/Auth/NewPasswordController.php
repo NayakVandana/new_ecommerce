@@ -24,6 +24,7 @@ class NewPasswordController extends Controller
         return Inertia::render('Auth/ResetPassword', [
             'email' => $request->email,
             'token' => $request->route('token'),
+            'redirect' => $request->query('redirect'),
         ]);
     }
 
@@ -59,7 +60,15 @@ class NewPasswordController extends Controller
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
         if ($status == Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($status));
+            $params = [];
+
+            if ($request->filled('redirect')) {
+                $params['redirect'] = $request->input('redirect');
+            }
+
+            return redirect()
+                ->route('login', $params)
+                ->with('status', 'Your password has been reset. Please sign in with your new password.');
         }
 
         throw ValidationException::withMessages([

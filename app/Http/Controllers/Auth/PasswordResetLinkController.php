@@ -15,10 +15,11 @@ class PasswordResetLinkController extends Controller
     /**
      * Display the password reset link request view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('Auth/ForgotPassword', [
             'status' => session('status'),
+            'redirect' => $request->query('redirect'),
         ]);
     }
 
@@ -40,8 +41,11 @@ class PasswordResetLinkController extends Controller
             $request->only('email')
         );
 
-        if ($status == Password::RESET_LINK_SENT) {
-            return back()->with('status', __($status));
+        if ($status === Password::RESET_LINK_SENT || $status === Password::INVALID_USER) {
+            return back()->with(
+                'status',
+                'If that email is registered, we have sent a password reset link.',
+            );
         }
 
         throw ValidationException::withMessages([

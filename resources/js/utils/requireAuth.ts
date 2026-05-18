@@ -88,3 +88,9 @@ export function registerUrl(returnTo?: string): string {
 
     return `${route('register')}?redirect=${encodeURIComponent(path)}`;
 }
+
+export function forgotPasswordUrl(returnTo?: string): string {
+    const path = resolveReturnTo(returnTo);
+
+    return `${route('password.request')}?redirect=${encodeURIComponent(path)}`;
+}
