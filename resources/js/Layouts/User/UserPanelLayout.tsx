@@ -1,25 +1,29 @@
 import CartBadge from '@/Components/CartBadge';
 import WishlistBadge from '@/Components/WishlistBadge';
-import AccountHeaderButton from '@/Components/store/AccountHeaderButton';
+import AdminHeaderLink from '@/Components/store/AdminHeaderLink';
+import UserAccountMenu from '@/Components/store/UserAccountMenu';
+import { userInitials } from '@/Components/store/StoreHeaderIcons';
 import FashionLogo from '@/Components/store/FashionLogo';
 import StoreFixedHeader from '@/Components/store/StoreFixedHeader';
 import AppearanceSync from '@/Components/AppearanceSync';
 import { catalogUrl } from '@/store/fashionBrand';
 import {
     storeBtnGhost,
-    storeMobileNavLink,
+    storeUserBody,
     storeUserMain,
+    storeUserMainColumn,
     storeUserMobileHeader,
     storeUserMobileHeaderRow,
     storeUserMobileMenu,
-    storeUserMobileTabActive,
-    storeUserMobileTabInactive,
-    storeUserMobileTabs,
     storeUserNavActive,
     storeUserNavInactive,
+    storeUserNavSection,
+    storeUserPageHeader,
     storeUserPageTitle,
     storeUserShell,
     storeUserSidebar,
+    storeUserSidebarAvatar,
+    storeUserSidebarUser,
     storeUserTopBar,
     storeUserTopBarInner,
 } from '@/store/storeTheme';
@@ -34,15 +38,15 @@ import { redirectToLogin } from '@/utils/requireAuth';
 import { Link, router } from '@inertiajs/react';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
-const mainSidebarLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
+const navLinks: { label: string; href: string; routeMatch: string | string[] }[] = [
     { label: 'Overview', href: route('dashboard'), routeMatch: 'dashboard' },
+    { label: 'Orders', href: route('user.orders.index'), routeMatch: ['user.orders.index', 'user.orders.show'] },
     { label: 'Wishlist', href: route('user.wishlist.index'), routeMatch: 'user.wishlist.index' },
     {
         label: 'Recently viewed',
         href: route('user.recently-viewed.index'),
         routeMatch: 'user.recently-viewed.index',
     },
-    { label: 'My orders', href: route('user.orders.index'), routeMatch: ['user.orders.index', 'user.orders.show'] },
 ];
 
 function isActive(routeMatch: string | string[]): boolean {
@@ -51,12 +55,19 @@ function isActive(routeMatch: string | string[]): boolean {
     return names.some((name) => route().current(name) === true);
 }
 
-export default function UserPanelLayout({
-    children,
-    title,
-}: PropsWithChildren<{ title?: string }>) {
-    const { user, loading, logout } = useAuthUser();
-    const [menuOpen, setMenuOpen] = useState(false);
+function navClass(active: boolean) {
+    return active ? storeUserNavActive : storeUserNavInactive;
+}
+
+function SidebarNav({
+    onNavigate,
+    user,
+    onLogout,
+}: {
+    onNavigate?: () => void;
+    user: { name: string; email: string; is_admin?: boolean };
+    onLogout: () => void;
+}) {
     const [, setHashTick] = useState(0);
 
     useEffect(() => {
@@ -65,6 +76,98 @@ export default function UserPanelLayout({
 
         return () => window.removeEventListener('hashchange', onHashChange);
     }, []);
+
+    return (
+        <>
+            <div className={storeUserSidebarUser}>
+                <span className={storeUserSidebarAvatar} aria-hidden>
+                    {userInitials(user.name)}
+                </span>
+                <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-stone-900 dark:text-stone-50">
+                        {user.name}
+                    </p>
+                    <p className="truncate text-xs text-stone-500">{user.email}</p>
+                </div>
+            </div>
+
+            <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Account">
+                <p className={storeUserNavSection}>Menu</p>
+                {navLinks.map((item) => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onNavigate}
+                        className={navClass(isActive(item.routeMatch))}
+                    >
+                        {item.label}
+                    </Link>
+                ))}
+
+                <p className={storeUserNavSection}>Account</p>
+                {PROFILE_SECTIONS.map((item) => (
+                    <Link
+                        key={item.id}
+                        href={profileSectionUrl(item.id)}
+                        onClick={onNavigate}
+                        className={navClass(isProfileSectionActive(item.id))}
+                    >
+                        {item.label}
+                    </Link>
+                ))}
+
+                <p className={storeUserNavSection}>Shop</p>
+                <Link
+                    href={route('guest.catalog')}
+                    onClick={onNavigate}
+                    className={storeUserNavInactive}
+                >
+                    Browse catalog
+                </Link>
+                <Link
+                    href={catalogUrl({ featured_only: true })}
+                    onClick={onNavigate}
+                    className={storeUserNavInactive}
+                >
+                    New arrivals
+                </Link>
+
+                {user.is_admin ? (
+                    <>
+                        <p className={storeUserNavSection}>Admin</p>
+                        <Link
+                            href={route('admin.dashboard')}
+                            onClick={onNavigate}
+                            className="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-amber-800 transition hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                        >
+                            Admin console
+                        </Link>
+                    </>
+                ) : null}
+            </nav>
+
+            <div className="border-t border-stone-100 p-3 dark:border-stone-800">
+                <button
+                    type="button"
+                    onClick={() => {
+                        onNavigate?.();
+                        void onLogout();
+                    }}
+                    className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                >
+                    Sign out
+                </button>
+            </div>
+        </>
+    );
+}
+
+export default function UserPanelLayout({
+    children,
+    title,
+}: PropsWithChildren<{ title?: string }>) {
+    const { user, loading, logout } = useAuthUser();
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -88,195 +191,92 @@ export default function UserPanelLayout({
         return null;
     }
 
-    const navClass = (active: boolean) =>
-        active ? storeUserNavActive : storeUserNavInactive;
+    const handleLogout = () => void logout().then(() => router.visit(route('home')));
+    const pageTitle = title ?? 'Account';
 
-    const desktopSidebar = (
-        <>
-            <div className="border-b border-stone-100 px-5 py-6 dark:border-stone-800">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-stone-500">
-                    Signed in
-                </p>
-                <p className="mt-2 truncate font-display text-xl text-stone-900 dark:text-stone-50">
-                    {user.name}
-                </p>
-                <p className="truncate text-xs text-stone-500">{user.email}</p>
-            </div>
-            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-                {mainSidebarLinks.map((item) => (
-                    <Link key={item.href} href={item.href} className={navClass(isActive(item.routeMatch))}>
-                        {item.label}
-                    </Link>
-                ))}
-                <p className="mt-4 px-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-stone-400 dark:text-stone-500">
-                    Account
-                </p>
-                {PROFILE_SECTIONS.map((item) => (
-                    <Link
-                        key={item.id}
-                        href={profileSectionUrl(item.id)}
-                        className={navClass(isProfileSectionActive(item.id))}
-                    >
-                        {item.label}
-                    </Link>
-                ))}
-                <Link href={route('guest.catalog')} className={`${storeUserNavInactive} mt-4`}>
-                    Continue shopping
-                </Link>
-                <Link href={catalogUrl({ featured_only: true })} className={storeUserNavInactive}>
-                    New arrivals
-                </Link>
-                {'is_admin' in user && user.is_admin ? (
-                    <Link
-                        href={route('admin.dashboard')}
-                        className="mt-2 py-3 pl-4 text-[11px] font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-200"
-                    >
-                        Admin
-                    </Link>
-                ) : null}
-            </nav>
-            <div className="border-t border-stone-100 p-3 dark:border-stone-800">
-                <button
-                    type="button"
-                    onClick={() => void logout().then(() => router.visit(route('home')))}
-                    className="w-full min-h-11 py-3 pl-4 text-left text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-400"
-                >
-                    Sign out
-                </button>
-            </div>
-        </>
-    );
-
-    const mobileMenuExtras = (
-        <nav className={`${storeUserMobileMenu} px-3 py-3`}>
-            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-stone-500">
-                More
-            </p>
-            <Link
-                href={route('guest.catalog')}
-                onClick={() => setMenuOpen(false)}
-                className={`${storeMobileNavLink} ${storeUserNavInactive}`}
-            >
-                Continue shopping
-            </Link>
-            <Link
-                href={catalogUrl({ featured_only: true })}
-                onClick={() => setMenuOpen(false)}
-                className={`${storeMobileNavLink} ${storeUserNavInactive}`}
-            >
-                New arrivals
-            </Link>
-            {'is_admin' in user && user.is_admin ? (
-                <Link
-                    href={route('admin.dashboard')}
-                    onClick={() => setMenuOpen(false)}
-                    className={`${storeMobileNavLink} text-amber-800 dark:text-amber-200`}
-                >
-                    Admin
-                </Link>
-            ) : null}
-            <button
-                type="button"
-                onClick={() => {
-                    setMenuOpen(false);
-                    void logout().then(() => router.visit(route('home')));
-                }}
-                className={`${storeMobileNavLink} w-full text-left text-red-700 dark:text-red-400`}
-            >
-                Sign out
-            </button>
-        </nav>
-    );
+    const mobileMenu = menuOpen ? (
+        <div className={`${storeUserMobileMenu} max-h-[min(70dvh,28rem)] overflow-y-auto`}>
+            <SidebarNav user={user} onLogout={handleLogout} onNavigate={() => setMenuOpen(false)} />
+        </div>
+    ) : null;
 
     return (
         <WishlistProvider>
-        <div className={`${storeUserShell} min-h-screen`}>
-            <AppearanceSync />
+            <div className={`${storeUserShell} flex min-h-screen flex-col`}>
+                <AppearanceSync />
 
-            <StoreFixedHeader>
-                <header className={`${storeUserTopBar} hidden lg:block`}>
-                    <div className={storeUserTopBarInner}>
-                        <FashionLogo subline="My account" />
-                        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-                            <Link href={route('guest.catalog')} className={storeBtnGhost}>
-                                Shop
-                            </Link>
-                            <WishlistBadge />
-                            <CartBadge />
-                            <AccountHeaderButton name={user.name} />
+                <StoreFixedHeader>
+                    <header className={`${storeUserTopBar} hidden lg:block`}>
+                        <div className={storeUserTopBarInner}>
+                            <FashionLogo subline="My account" />
+                            <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+                                <Link href={route('guest.catalog')} className={storeBtnGhost}>
+                                    Shop
+                                </Link>
+                                {user.is_admin ? <AdminHeaderLink /> : null}
+                                <WishlistBadge />
+                                <CartBadge />
+                                <UserAccountMenu name={user.name} onLogout={handleLogout} />
+                            </div>
                         </div>
-                    </div>
-                </header>
+                    </header>
 
-                <header className={`${storeUserMobileHeader} lg:hidden`}>
-                    <div className={storeUserMobileHeaderRow}>
-                        <button
-                            type="button"
-                            className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg text-stone-600 hover:bg-stone-200/80 dark:hover:bg-stone-800"
-                            aria-expanded={menuOpen}
-                            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-                            onClick={() => setMenuOpen((o) => !o)}
-                        >
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                {menuOpen ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                                ) : (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                                )}
-                            </svg>
-                        </button>
-                        <span className="min-w-0 flex-1 truncate text-center font-display text-base text-stone-900 sm:text-lg dark:text-stone-50">
-                            {title ?? 'Account'}
-                        </span>
-                        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-                            <WishlistBadge />
-                            <CartBadge />
-                            <AccountHeaderButton name={user.name} />
+                    <header className={`${storeUserMobileHeader} lg:hidden`}>
+                        <div className={storeUserMobileHeaderRow}>
+                            <button
+                                type="button"
+                                className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg text-stone-600 hover:bg-stone-200/80 dark:hover:bg-stone-800"
+                                aria-expanded={menuOpen}
+                                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                                onClick={() => setMenuOpen((o) => !o)}
+                            >
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {menuOpen ? (
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    ) : (
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                                        />
+                                    )}
+                                </svg>
+                            </button>
+                            <Link
+                                href={route('dashboard')}
+                                className="min-w-0 flex-1 truncate text-center font-display text-base text-stone-900 sm:text-lg dark:text-stone-50"
+                            >
+                                My account
+                            </Link>
+                            <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                                <WishlistBadge />
+                                <CartBadge />
+                                <UserAccountMenu name={user.name} onLogout={handleLogout} />
+                            </div>
                         </div>
+                        {mobileMenu}
+                    </header>
+                </StoreFixedHeader>
+
+                <div className={storeUserBody}>
+                    <aside className={storeUserSidebar}>
+                        <SidebarNav user={user} onLogout={handleLogout} />
+                    </aside>
+
+                    <div className={storeUserMainColumn}>
+                        <header className={storeUserPageHeader}>
+                            <h1 className={storeUserPageTitle}>{pageTitle}</h1>
+                        </header>
+                        <main className={storeUserMain}>{children}</main>
                     </div>
-                    <nav className={storeUserMobileTabs} aria-label="Account sections">
-                        {mainSidebarLinks.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setMenuOpen(false)}
-                                className={
-                                    isActive(item.routeMatch)
-                                        ? storeUserMobileTabActive
-                                        : storeUserMobileTabInactive
-                                }
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                        {PROFILE_SECTIONS.map((item) => (
-                            <Link
-                                key={item.id}
-                                href={profileSectionUrl(item.id)}
-                                onClick={() => setMenuOpen(false)}
-                                className={
-                                    isProfileSectionActive(item.id)
-                                        ? storeUserMobileTabActive
-                                        : storeUserMobileTabInactive
-                                }
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
-                    {menuOpen ? mobileMenuExtras : null}
-                </header>
-            </StoreFixedHeader>
-
-            <div className="flex w-full min-h-0 flex-1 flex-col lg:flex-row">
-                <aside className={storeUserSidebar}>{desktopSidebar}</aside>
-
-                <div className="flex min-w-0 flex-1 flex-col">
-                    <h1 className={`${storeUserPageTitle} px-3 sm:px-6 lg:px-8`}>{title ?? 'Account'}</h1>
-                    <main className={storeUserMain}>{children}</main>
                 </div>
             </div>
-        </div>
         </WishlistProvider>
     );
 }

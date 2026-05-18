@@ -109,7 +109,7 @@ export default function Show() {
     return (
         <UserPanelLayout title={order ? `Order ${order.order_number}` : 'Order'}>
             <Head title={order ? `Order ${order.order_number}` : 'Order detail'} />
-            <div className="mx-auto max-w-3xl space-y-4">
+            <div className="mx-auto w-full max-w-4xl space-y-4">
                 <Link
                     href={route('user.orders.index')}
                     className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline dark:text-stone-100"

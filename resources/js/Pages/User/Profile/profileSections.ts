@@ -7,9 +7,9 @@ export const PROFILE_SECTIONS: {
     label: string;
     title: string;
 }[] = [
-    { id: 'profile', label: 'Profile information', title: 'Profile information' },
-    { id: 'appearance', label: 'Appearance settings', title: 'Appearance settings' },
-    { id: 'password', label: 'Update password', title: 'Update password' },
+    { id: 'profile', label: 'Personal details', title: 'Personal details' },
+    { id: 'appearance', label: 'Appearance', title: 'Appearance' },
+    { id: 'password', label: 'Password', title: 'Password' },
 ];
 
 export function profileSectionFromHash(): ProfileSectionId {

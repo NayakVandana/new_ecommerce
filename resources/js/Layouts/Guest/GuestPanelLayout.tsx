@@ -1,6 +1,7 @@
 import CartBadge from '@/Components/CartBadge';
 import WishlistBadge from '@/Components/WishlistBadge';
-import AccountHeaderButton from '@/Components/store/AccountHeaderButton';
+import AdminHeaderLink from '@/Components/store/AdminHeaderLink';
+import UserAccountMenu from '@/Components/store/UserAccountMenu';
 import FashionAnnouncementBar from '@/Components/store/FashionAnnouncementBar';
 import HeaderCatalogSearch from '@/Components/store/HeaderCatalogSearch';
 import FashionLogo from '@/Components/store/FashionLogo';
@@ -30,7 +31,7 @@ import {
     storeShell,
 } from '@/store/storeTheme';
 import { useAuthUser } from '@/auth/useAuthUser';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
 function navClass(active: boolean) {
@@ -73,7 +74,7 @@ function GuestPanelLayoutContent({
     children,
     title,
 }: PropsWithChildren<{ title?: string }>) {
-    const { user } = useAuthUser();
+    const { user, logout } = useAuthUser();
     const [menuOpen, setMenuOpen] = useState(false);
     const { shopCategories } = useWomenStore();
     const onCatalog = isGuestCatalogRoute();
@@ -106,8 +107,12 @@ function GuestPanelLayoutContent({
                         <div className={`${storeHeaderActions} justify-self-end`}>
                             <WishlistBadge />
                             <CartBadge />
+                            {user?.is_admin ? <AdminHeaderLink /> : null}
                             {user ? (
-                                <AccountHeaderButton name={user.name} />
+                                <UserAccountMenu
+                                    name={user.name}
+                                    onLogout={() => void logout().then(() => router.visit(route('home')))}
+                                />
                             ) : (
                                 <>
                                     <Link

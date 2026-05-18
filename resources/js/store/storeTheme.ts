@@ -56,6 +56,24 @@ export const storeHeaderCartBadge =
 export const storeHeaderAccount =
     'inline-flex min-h-10 max-w-[7rem] items-center gap-1.5 bg-stone-900 px-2.5 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-stone-800 sm:max-w-[10rem] sm:gap-2 sm:px-4 sm:text-[11px] sm:tracking-[0.15em] dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200';
 
+export const storeUserMenuTrigger =
+    'inline-flex min-h-10 max-w-[11rem] items-center gap-2 rounded-lg px-1 py-1 text-sm font-medium text-stone-700 transition hover:bg-stone-100/80 sm:max-w-none sm:gap-2.5 sm:px-2 dark:text-stone-200 dark:hover:bg-stone-800/80';
+
+export const storeUserMenuAvatar =
+    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xs font-bold uppercase tracking-wide text-white';
+
+export const storeUserMenuDropdown =
+    'overflow-hidden rounded-lg bg-white py-1 shadow-lg ring-1 ring-stone-200/80 dark:bg-stone-900 dark:ring-stone-700';
+
+export const storeUserMenuItem =
+    'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-600 transition hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800';
+
+export const storeUserMenuDivider =
+    'my-1 border-t border-stone-100 dark:border-stone-800';
+
+export const storeAdminHeaderLink =
+    'hidden min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100/80 hover:text-stone-900 sm:inline-flex dark:text-stone-400 dark:hover:bg-stone-800/80 dark:hover:text-stone-100';
+
 export const storeMobileCategoryStrip =
     'border-b border-stone-200 bg-stone-50/95 dark:border-stone-800 dark:bg-stone-950/95 lg:hidden';
 
@@ -229,17 +247,26 @@ export const storeUserMobileTabActive =
 export const storeUserMobileTabInactive =
     'shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400';
 
+export const storeUserBody =
+    'flex w-full min-h-0 flex-1';
+
 export const storeUserSidebar =
-    'hidden w-64 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 lg:fixed lg:bottom-0 lg:left-0 lg:top-16 lg:z-30 lg:flex';
+    'hidden w-56 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 xl:w-60 lg:sticky lg:top-16 lg:flex lg:max-h-[calc(100dvh-4rem)] lg:flex-col lg:overflow-y-auto';
 
 export const storeUserMobileMenu =
     'border-t border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900';
 
-export const storeUserMain =
-    `mx-auto w-full min-w-0 max-w-7xl flex-1 px-3 py-5 ${pbSafe} sm:px-6 sm:py-8 lg:ml-64 lg:max-w-[calc(100%-16rem)] lg:px-8 lg:py-10`;
+export const storeUserMainColumn =
+    'flex min-w-0 flex-1 flex-col';
+
+export const storeUserPageHeader =
+    'border-b border-stone-200/90 bg-white/90 px-4 py-5 backdrop-blur-sm sm:px-6 lg:px-8 dark:border-stone-800 dark:bg-stone-950/90';
 
 export const storeUserPageTitle =
-    'mb-6 hidden font-display text-2xl text-stone-900 dark:text-stone-50 sm:text-3xl lg:block';
+    'font-display text-2xl text-stone-900 dark:text-stone-50 sm:text-[1.75rem]';
+
+export const storeUserMain =
+    `w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 ${pbSafe}`;
 
 export const storeTabList =
     `${scrollX} flex border-b border-stone-200 bg-stone-50/90 dark:border-stone-800 dark:bg-stone-900/60`;
@@ -256,10 +283,19 @@ export const storePanel =
 export const storePanelBody = 'p-4 sm:p-6';
 
 export const storeUserNavActive =
-    'border-l-2 border-stone-900 bg-stone-50 py-3 pl-4 text-[11px] font-semibold uppercase tracking-wider text-stone-900 dark:border-stone-100 dark:bg-stone-900/80 dark:text-stone-50';
+    'flex items-center rounded-lg bg-stone-100 px-3 py-2.5 text-sm font-medium text-stone-900 dark:bg-stone-800 dark:text-stone-50';
 
 export const storeUserNavInactive =
-    'py-3 pl-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100';
+    'flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-100';
+
+export const storeUserNavSection =
+    'px-3 pt-5 pb-1 text-xs font-medium text-stone-400 dark:text-stone-500';
+
+export const storeUserSidebarUser =
+    'flex items-center gap-3 border-b border-stone-100 px-4 py-5 dark:border-stone-800';
+
+export const storeUserSidebarAvatar =
+    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-sm font-bold uppercase text-white';
 
 export const storeUserSubNav =
     'mb-2 ml-3 flex flex-col gap-0.5 border-l border-stone-200 pl-3 dark:border-stone-700';

@@ -94,26 +94,18 @@ export default function Index() {
     }, [page, load]);
 
     return (
-        <UserPanelLayout title="My orders">
-            <Head title="My orders" />
-            <div className="mx-auto max-w-4xl space-y-4">
-                <p className={storeMutedText}>
-                    Each row is one order (checkout creates a separate order for
-                    each cart item). Open an order to see its product and billing.
-                </p>
-
-                {placedCount > 1 ? (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-                        {placedCount} orders were placed — one per item in your
-                        cart. Shipping and tax were split across them.
-                    </div>
-                ) : null}
-
-                <div className="flex justify-end">
+        <UserPanelLayout title="Orders">
+            <Head title="Orders" />
+            <div className="space-y-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <p className={`max-w-2xl ${storeMutedText}`}>
+                        Each row is one order. Open an order to see its product and billing
+                        details.
+                    </p>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className={`${storeInput} w-full sm:max-w-[12rem]`}
+                        className={`${storeInput} w-full shrink-0 sm:w-44`}
                         aria-label="Filter by status"
                     >
                         {STATUS_OPTIONS.map((s) => (
@@ -123,6 +115,13 @@ export default function Index() {
                         ))}
                     </select>
                 </div>
+
+                {placedCount > 1 ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+                        {placedCount} orders were placed — one per item in your
+                        cart. Shipping and tax were split across them.
+                    </div>
+                ) : null}
 
                 {error ? <div className={storeErrorBanner}>{error}</div> : null}
 

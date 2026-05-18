@@ -13,7 +13,7 @@ export default function Dashboard() {
     return (
         <UserPanelLayout title="Overview">
             <Head title="ÉLAN · My account" />
-            <div className="mx-auto max-w-3xl space-y-8">
+            <div className="mx-auto w-full max-w-5xl space-y-8">
                 <div className={storeCard}>
                     <p className={storeSectionEyebrow}>Your wardrobe</p>
                     <h2 className={`${storeSectionTitle} mt-2`}>
