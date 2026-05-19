@@ -23,22 +23,52 @@ class ContactController extends Controller
             $validation = Validator::make($request->all(), [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255'],
-                'phone' => ['nullable', 'string', 'max:32'],
+                'phone' => ['required', 'string', 'max:32'],
                 'subject' => ['nullable', 'string', 'max:200'],
                 'message' => ['required', 'string', 'min:10', 'max:5000'],
+            ], [
+                'name.required' => 'Please enter your name.',
+                'name.max' => 'Name cannot exceed 255 characters.',
+                'email.required' => 'Please enter your email address.',
+                'email.email' => 'Please enter a valid email address.',
+                'email.max' => 'Email cannot exceed 255 characters.',
+                'phone.required' => 'Phone number is required.',
+                'phone.max' => 'Phone number is too long.',
+                'subject.max' => 'Subject cannot exceed 200 characters.',
+                'message.required' => 'Please enter your message.',
+                'message.min' => 'Your message must be at least 10 characters.',
+                'message.max' => 'Your message cannot exceed 5000 characters.',
             ]);
 
+            $validation->after(function ($validator) use ($request) {
+                $phone = (string) $request->input('phone', '');
+                $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+                if (strlen($digits) < 10) {
+                    $validator->errors()->add('phone', 'Enter a valid 10-digit mobile number.');
+                } elseif (strlen($digits) > 12) {
+                    $validator->errors()->add('phone', 'Phone number is too long.');
+                } elseif (! preg_match('/^[6-9]\d{9}$/', substr($digits, -10))) {
+                    $validator->errors()->add('phone', 'Enter a valid Indian mobile number starting with 6–9.');
+                }
+            });
+
             if ($validation->fails()) {
-                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+                return $this->sendJsonResponse(
+                    false,
+                    'Please fix the highlighted fields.',
+                    $validation->errors()->getMessages(),
+                    200,
+                );
             }
 
             $message = ContactMessage::create([
                 'user_id' => $this->resolveUserId($request),
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'phone' => $request->input('phone'),
-                'subject' => $request->input('subject'),
-                'message' => $request->input('message'),
+                'name' => trim((string) $request->input('name')),
+                'email' => strtolower(trim((string) $request->input('email'))),
+                'phone' => trim((string) $request->input('phone')),
+                'subject' => $request->filled('subject') ? trim((string) $request->input('subject')) : null,
+                'message' => trim((string) $request->input('message')),
                 'ip_address' => $request->ip(),
             ]);
 

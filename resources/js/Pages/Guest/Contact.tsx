@@ -11,6 +11,11 @@ import {
     storeLabel,
     storeMutedText,
 } from '@/store/storeTheme';
+import {
+    type ContactFieldKey,
+    mapApiFieldErrors,
+    validateContactForm,
+} from '@/store/validateContactForm';
 import axios from 'axios';
 import { Head } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
@@ -20,8 +25,6 @@ type ContactResponse = {
     message: string;
     data?: { id: number } | Record<string, string[]>;
 };
-
-type FieldKey = 'name' | 'email' | 'phone' | 'subject' | 'message';
 
 export default function Contact() {
     return (
@@ -42,7 +45,7 @@ function ContactForm() {
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
+    const [fieldErrors, setFieldErrors] = useState<Partial<Record<ContactFieldKey, string>>>({});
 
     useEffect(() => {
         if (user) {
@@ -54,15 +57,46 @@ function ContactForm() {
         }
     }, [user]);
 
-    const inputClass = (field: FieldKey) =>
+    const clearFieldError = (field: ContactFieldKey) => {
+        setFieldErrors((prev) => {
+            if (!prev[field]) {
+                return prev;
+            }
+
+            const next = { ...prev };
+            delete next[field];
+
+            return next;
+        });
+    };
+
+    const inputClass = (field: ContactFieldKey) =>
         `${storeInput} mt-1 ${fieldErrors[field] ? storeInputError : ''}`;
 
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
-        setProcessing(true);
         setError(null);
         setSuccess(null);
+
+        const payload = {
+            name,
+            email,
+            phone,
+            subject,
+            message,
+        };
+
+        const clientErrors = validateContactForm(payload);
+
+        if (Object.keys(clientErrors).length > 0) {
+            setFieldErrors(clientErrors);
+            setError('Please fix the highlighted fields.');
+
+            return;
+        }
+
         setFieldErrors({});
+        setProcessing(true);
 
         const token = getUserApiToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -70,21 +104,23 @@ function ContactForm() {
         try {
             const res = await axios.post<ContactResponse>(
                 '/api/v1/contact/contact-submit',
-                { name, email, phone: phone || null, subject: subject || null, message },
+                {
+                    name: name.trim(),
+                    email: email.trim(),
+                    phone: phone.trim(),
+                    subject: subject.trim() || null,
+                    message: message.trim(),
+                },
                 { headers },
             );
 
             if (!res.data.success) {
-                const payload = res.data.data;
-                if (payload && !('id' in payload)) {
-                    const next: Partial<Record<FieldKey, string>> = {};
-                    for (const [key, messages] of Object.entries(payload)) {
-                        if (Array.isArray(messages) && messages[0]) {
-                            next[key as FieldKey] = messages[0];
-                        }
-                    }
-                    setFieldErrors(next);
+                const apiErrors = mapApiFieldErrors(res.data.data);
+
+                if (Object.keys(apiErrors).length > 0) {
+                    setFieldErrors(apiErrors);
                 }
+
                 setError(res.data.message || 'Could not send your message.');
 
                 return;
@@ -98,8 +134,22 @@ function ContactForm() {
                 setEmail('');
                 setPhone('');
             }
-        } catch {
-            setError('Could not send your message. Please try again.');
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.data) {
+                const body = err.response.data as ContactResponse;
+                const apiErrors = mapApiFieldErrors(body.data);
+
+                if (Object.keys(apiErrors).length > 0) {
+                    setFieldErrors(apiErrors);
+                    setError(body.message || 'Please fix the highlighted fields.');
+
+                    return;
+                }
+
+                setError(body.message || 'Could not send your message.');
+            } else {
+                setError('Could not send your message. Please try again.');
+            }
         } finally {
             setProcessing(false);
         }
@@ -120,20 +170,23 @@ function ContactForm() {
 
             {error ? <div className={`mt-6 ${storeErrorBanner}`}>{error}</div> : null}
 
-            <form onSubmit={submit} className={`mt-8 ${storeCard}`}>
+            <form onSubmit={submit} className={`mt-8 ${storeCard}`} noValidate>
                 <div className="grid gap-5 sm:grid-cols-2">
                     <div>
                         <label htmlFor="contact-name" className={storeLabel}>
-                            Name
+                            Name <span className="text-red-600 dark:text-red-400">*</span>
                         </label>
                         <input
                             id="contact-name"
                             type="text"
-                            required
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => {
+                                setName(e.target.value);
+                                clearFieldError('name');
+                            }}
                             className={inputClass('name')}
                             autoComplete="name"
+                            aria-invalid={Boolean(fieldErrors.name)}
                         />
                         {fieldErrors.name ? (
                             <p className={storeFieldError}>{fieldErrors.name}</p>
@@ -141,16 +194,19 @@ function ContactForm() {
                     </div>
                     <div>
                         <label htmlFor="contact-email" className={storeLabel}>
-                            Email
+                            Email <span className="text-red-600 dark:text-red-400">*</span>
                         </label>
                         <input
                             id="contact-email"
                             type="email"
-                            required
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                clearFieldError('email');
+                            }}
                             className={inputClass('email')}
                             autoComplete="email"
+                            aria-invalid={Boolean(fieldErrors.email)}
                         />
                         {fieldErrors.email ? (
                             <p className={storeFieldError}>{fieldErrors.email}</p>
@@ -158,15 +214,20 @@ function ContactForm() {
                     </div>
                     <div className="sm:col-span-2">
                         <label htmlFor="contact-phone" className={storeLabel}>
-                            Phone (optional)
+                            Phone <span className="text-red-600 dark:text-red-400">*</span>
                         </label>
                         <input
                             id="contact-phone"
                             type="tel"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={(e) => {
+                                setPhone(e.target.value);
+                                clearFieldError('phone');
+                            }}
                             className={inputClass('phone')}
                             autoComplete="tel"
+                            placeholder="10-digit mobile number"
+                            aria-invalid={Boolean(fieldErrors.phone)}
                         />
                         {fieldErrors.phone ? (
                             <p className={storeFieldError}>{fieldErrors.phone}</p>
@@ -180,8 +241,13 @@ function ContactForm() {
                             id="contact-subject"
                             type="text"
                             value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
+                            onChange={(e) => {
+                                setSubject(e.target.value);
+                                clearFieldError('subject');
+                            }}
                             className={inputClass('subject')}
+                            maxLength={200}
+                            aria-invalid={Boolean(fieldErrors.subject)}
                         />
                         {fieldErrors.subject ? (
                             <p className={storeFieldError}>{fieldErrors.subject}</p>
@@ -189,16 +255,23 @@ function ContactForm() {
                     </div>
                     <div className="sm:col-span-2">
                         <label htmlFor="contact-message" className={storeLabel}>
-                            Message
+                            Message <span className="text-red-600 dark:text-red-400">*</span>
                         </label>
                         <textarea
                             id="contact-message"
-                            required
                             rows={6}
                             value={message}
-                            onChange={(e) => setMessage(e.target.value)}
+                            onChange={(e) => {
+                                setMessage(e.target.value);
+                                clearFieldError('message');
+                            }}
                             className={`${inputClass('message')} resize-y`}
+                            maxLength={5000}
+                            aria-invalid={Boolean(fieldErrors.message)}
                         />
+                        <p className={`mt-1 text-xs ${storeMutedText}`}>
+                            {message.trim().length}/5000 characters (minimum 10)
+                        </p>
                         {fieldErrors.message ? (
                             <p className={storeFieldError}>{fieldErrors.message}</p>
                         ) : null}
