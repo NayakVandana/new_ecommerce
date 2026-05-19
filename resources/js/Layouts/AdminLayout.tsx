@@ -110,6 +110,18 @@ function IconTicket({ className }: { className?: string }) {
     );
 }
 
+function IconMail({ className }: { className?: string }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 00-1.07-1.916l-7.5-4.615a2.25 2.25 0 00-2.36 0L3.32 4.91a2.25 2.25 0 00-1.07 1.916V6.75"
+            />
+        </svg>
+    );
+}
+
 function IconReceipt({ className }: { className?: string }) {
     return (
         <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -274,6 +286,14 @@ function SidebarContent({
                     onClick={onNavigate}
                 >
                     Users
+                </NavLink>
+                <NavLink
+                    href={route('admin.contact-messages.index')}
+                    active={route().current('admin.contact-messages.index') ?? false}
+                    icon={IconMail}
+                    onClick={onNavigate}
+                >
+                    Contact messages
                 </NavLink>
                 <NavLink
                     href={route('admin.recently-viewed.index')}

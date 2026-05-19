@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BrandApiController;
 use App\Http\Controllers\Admin\CouponApiController;
 use App\Http\Controllers\Admin\CouponUsageApiController;
 use App\Http\Controllers\Admin\CategoryApiController;
+use App\Http\Controllers\Admin\ContactMessageApiController;
 use App\Http\Controllers\Admin\DashboardApiController;
 use App\Http\Controllers\Admin\OrderApiController;
 use App\Http\Controllers\Admin\OrderInvoiceController;
@@ -69,4 +70,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin')->group(function
     Route::post('/orders/order-show', [OrderApiController::class, 'postOrderShow']);
     Route::post('/orders/order-invoice-download', [OrderInvoiceController::class, 'download']);
     Route::post('/orders/update-status', [OrderApiController::class, 'postOrderUpdateStatus']);
+
+    Route::post('/contact-messages/contact-messages-list', [ContactMessageApiController::class, 'postContactMessagesList']);
+    Route::post('/contact-messages/contact-message-mark-read', [ContactMessageApiController::class, 'postContactMessageMarkRead']);
+    Route::post('/contact-messages/contact-message-destroy', [ContactMessageApiController::class, 'postContactMessageDestroy']);
 });

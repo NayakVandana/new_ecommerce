@@ -2,10 +2,13 @@
 
 namespace App\Services\Mail;
 
+use App\Mail\ContactMessageAdminMail;
+use App\Mail\ContactMessageReceivedMail;
 use App\Mail\NewOrderAdminMail;
 use App\Mail\NewUserAdminMail;
 use App\Mail\OrderPlacedCustomerMail;
 use App\Mail\WelcomeUserMail;
+use App\Models\ContactMessage;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -72,6 +75,28 @@ class StoreMailer
             Log::warning('Order email failed.', [
                 'user_id' => $user->id,
                 'order_ids' => $orders->pluck('id')->all(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function sendContactSubmitted(ContactMessage $message): void
+    {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        try {
+            Mail::to($message->email)->send(new ContactMessageReceivedMail($message));
+
+            $admin = $this->adminNotifyAddress();
+
+            if ($admin) {
+                Mail::to($admin)->send(new ContactMessageAdminMail($message));
+            }
+        } catch (Throwable $e) {
+            Log::warning('Contact email failed.', [
+                'contact_message_id' => $message->id,
                 'error' => $e->getMessage(),
             ]);
         }

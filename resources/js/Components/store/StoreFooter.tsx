@@ -83,6 +83,11 @@ export default function StoreFooter() {
                                     New arrivals
                                 </Link>
                             </li>
+                            <li>
+                                <Link href={route('guest.contact')} className="hover:underline">
+                                    Contact us
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                 </div>

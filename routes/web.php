@@ -42,6 +42,8 @@ Route::get('/cart', fn () => Inertia::render('Guest/Cart'))->name('guest.cart');
 
 Route::get('/checkout', fn () => Inertia::render('Guest/Checkout'))->name('guest.checkout');
 
+Route::get('/contact', fn () => Inertia::render('Guest/Contact'))->name('guest.contact');
+
 Route::get('/welcome', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -114,6 +116,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('products/{id}/edit', fn (int $id) => Inertia::render('Admin/Products/Form', ['productId' => $id]))
         ->whereNumber('id')
         ->name('products.edit');
+
+    Route::get('contact-messages', fn () => Inertia::render('Admin/ContactMessages/Index'))
+        ->name('contact-messages.index');
 });
 
 require __DIR__.'/auth.php';
