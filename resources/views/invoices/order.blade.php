@@ -74,14 +74,11 @@
             color: #047857;
             font-size: 9px;
         }
-        .payments { margin-top: 20px; }
-        .payments table { width: 100%; border-collapse: collapse; }
-        .payments th, .payments td {
-            padding: 6px 8px;
-            border-bottom: 1px solid #f1f5f9;
-            text-align: left;
+        .payment-note {
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 10px;
         }
-        .payments th { font-size: 10px; color: #64748b; text-transform: uppercase; }
         .footer {
             margin-top: 28px;
             padding-top: 12px;
@@ -126,8 +123,7 @@
             <td class="meta">
                 <strong>INVOICE</strong>
                 <span>{{ $order->order_number }}</span><br>
-                <span class="muted">Date: {{ $placedAt?->format('d M Y') ?? '—' }}</span><br>
-                <span class="muted">Status: {{ $statusLabel }}</span>
+                <span class="muted">Date: {{ $placedAt?->format('d M Y') ?? '—' }}</span>
             </td>
         </tr>
     </table>
@@ -257,29 +253,7 @@
     </tr>
 </table>
 
-@if ($order->payments->isNotEmpty())
-    <div class="payments">
-        <h2>Payments</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th class="num">Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($order->payments as $payment)
-                    <tr>
-                        <td>{{ ucfirst($payment->method) }}</td>
-                        <td>{{ ucfirst($payment->status) }}</td>
-                        <td class="num">{{ $money($payment->amount) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-@endif
+<p class="payment-note">Payment: {{ $paymentMethodLabel }}</p>
 
 @if ($order->customer_note)
     <p style="margin-top: 16px;"><strong>Customer note:</strong> {{ $order->customer_note }}</p>

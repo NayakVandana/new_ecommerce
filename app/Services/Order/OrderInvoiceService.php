@@ -14,7 +14,6 @@ class OrderInvoiceService
                 'coupon:id,code',
                 'items' => fn ($q) => $q->orderBy('id'),
                 'items.productVariant',
-                'payments' => fn ($q) => $q->orderBy('id'),
             ])
             ->find($id);
     }
@@ -44,9 +43,4 @@ class OrderInvoiceService
         ]));
     }
 
-    public function statusLabel(string $status): string
-    {
-        return config('orders.statuses.'.$status)
-            ?? ucfirst(str_replace('_', ' ', $status));
-    }
 }

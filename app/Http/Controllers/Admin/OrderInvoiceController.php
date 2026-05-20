@@ -42,7 +42,10 @@ class OrderInvoiceController extends Controller
                 'productDiscountTotal' => $summary['product_discount_total'],
                 'itemCount' => $summary['item_count'],
                 'brand' => 'Suhaag',
-                'statusLabel' => $this->invoiceService->statusLabel($order->status),
+                'paymentMethodLabel' => config(
+                    'checkout.payment_methods.'.config('checkout.default_payment_method', 'cod'),
+                    'Cash on delivery',
+                ),
                 'billingLines' => $this->invoiceService->formatAddressLines($order->address_of_bill_to),
                 'shippingLines' => $this->invoiceService->formatAddressLines($order->address_of_ship_to),
                 'placedAt' => $order->placed_at ?? $order->created_at,
